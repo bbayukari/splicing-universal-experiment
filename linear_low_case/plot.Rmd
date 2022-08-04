@@ -1,0 +1,187 @@
+---
+title: "experience"
+author: "王泽植"
+date: '2022-07-10'
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+df = read.csv('linear_rho-0.2_snr-6_true-sparsity.csv')
+df = as_tibble(df)
+```
+
+## p=50 and n=50
+
+```{r}
+
+p3 = 
+bind_rows(
+  df %>% 
+    filter(n==50,p==50) %>% 
+    select(Sparsity = k, time = gurobi_time) %>% 
+    mutate(method = 'gurobi'),
+  df %>% 
+    filter(n==50,p==50) %>% 
+    select(Sparsity = k, time = autodiff_time) %>% 
+    mutate(method = 'abess')  
+) %>% 
+    ggplot(aes(Sparsity, time, color = method)) +
+        geom_point() +
+        scale_y_log10(
+        breaks = 10^(-1:3),
+        labels = scales::trans_format(
+            "log10", 
+            scales::math_format(10^.x))) +
+        geom_smooth(method = 'lm', formula = y ~ x) +
+        ylab('Runtime (sec)')
+
+#ggsave("p_50_n_50.pdf")
+```
+
+```{r}
+df %>%
+    filter(n==50,p==50) %>%
+    lm(log(gurobi_time)~k, data = .) %>%
+    summary()
+
+df %>%
+    filter(n==50,p==50) %>%
+    lm(log(autodiff_time)~k, data = .) %>%
+    summary()
+```
+
+## k=10 and n=100
+
+```{r}
+tem_data = bind_rows(
+  df %>% 
+    filter(n==100,k==10) %>% 
+    select(Dimension = p, time = gurobi_time) %>% 
+    mutate(method = 'gurobi'),
+  df %>% 
+    filter(n==100,k==10) %>% 
+    select(Dimension = p, time = autodiff_time) %>% 
+    mutate(method = 'abess')  
+) %>% 
+    filter(Dimension >= 30) 
+
+p2 = 
+ggplot(tem_data, aes(Dimension, time, color = method)) +
+    geom_point() +
+    scale_y_log10(
+        breaks = 10^(-1:3),
+        labels = scales::trans_format(
+            "log10", 
+            scales::math_format(10^.x))) +
+    geom_smooth(data = filter(tem_data, method == 'abess'),method = 'lm', formula = y ~ log(x)) +
+    geom_smooth(data = filter(tem_data, method == 'gurobi'),method = 'lm', formula = y ~ x) +
+    ylab('Runtime (sec)') +
+    scale_x_continuous(breaks = seq(30,110,10))
+
+#ggsave("k_10_n_100.pdf")
+tem_data %>% 
+    filter(method == 'gurobi') %>% 
+    lm(log(time)~Dimension, data = .) %>% 
+    summary()
+
+tem_data %>% 
+    filter(method == 'abess') %>% 
+    lm(time~Dimension, data = .) %>% 
+    summary()
+```
+
+
+```{r}
+library(ggpubr)
+page = 
+ggarrange(p1,
+          ggarrange(p2,p3,nrow=1,ncol=2,legend = 'none',labels = c('B','C')),
+          nrow=2,ncol=1,legend = 'top',heights = c(1.5,1),labels = 'A')
+ggexport(page, filename = 'my_plot.pdf', width = 10)
+```
+
+
+```{r}
+df %>% 
+    filter(n==100,k==10,p%%10==0) %>% 
+    select(Dimension = p, autodiff_accuracy, gurobi_accuracy) %>% 
+    group_by(Dimension) %>% 
+    summarise(abess = str_c(round(mean(autodiff_accuracy), digits = 2), '(',round(sd(autodiff_accuracy), digits = 2), ')'),
+             gurobi = str_c(round(mean(gurobi_accuracy), digits = 2), '(',round(sd(gurobi_accuracy), digits = 2), ')')) 
+```
+
+```{r}
+df %>% 
+    filter(n==50,p==50,k>10) %>% 
+    select(sparsity = k, autodiff_accuracy, gurobi_accuracy) %>% 
+    group_by(sparsity) %>% 
+    summarise(abess = str_c(round(mean(autodiff_accuracy), digits = 2), '(',round(sd(autodiff_accuracy), digits = 2), ')'),
+             gurobi = str_c(round(mean(gurobi_accuracy), digits = 2), '(',round(sd(gurobi_accuracy), digits = 2), ')')) 
+```
+
+```{r}
+
+```
+
+## n changes
+
+
+```{r}
+df2 = read_csv('linear_rho-0.2_snr-6_timelimit-3600_n-change.csv')
+```
+
+```{r}
+df3 = bind_rows(
+    df2 %>% 
+    select(n, time = gurobi_time) %>% 
+    mutate(method = 'gurobi'),
+    df2 %>% 
+    select(n, time = autodiff_time) %>% 
+    mutate(method = 'abess')) %>% 
+    filter(n>=100)
+```
+```{r}
+p1 = 
+ggplot(df3,aes(n, time, color = method)) +
+    geom_point() +
+    scale_y_log10(
+        breaks = 10^(-1:3),
+        labels = scales::trans_format(
+            "log10", 
+            scales::math_format(10^.x))) +
+    labs(x = 'Sample size', y = 'Runtime (sec)') +
+    geom_smooth(method = 'loess', formula = y ~ log(x))
+```
+
+```{r}
+df2 %>% 
+    filter(n%%100==0) %>% 
+    select(n, autodiff_accuracy, gurobi_accuracy) %>% 
+    group_by(n) %>% 
+    summarise(abess = str_c(round(mean(autodiff_accuracy), digits = 2), '(',round(sd(autodiff_accuracy), digits = 2), ')'),
+             gurobi = str_c(round(mean(gurobi_accuracy), digits = 2), '(',round(sd(gurobi_accuracy), digits = 2), ')')) 
+```
+
+```{r}
+df3 %>% 
+    filter(n%%100==0) %>% 
+    mutate(across(n,as.factor)) %>% 
+    ggplot(aes(n, time, fill = method)) +
+    geom_boxplot() +
+    scale_y_log10() 
+```
+```{r}
+df3 %>% 
+    group_by(n,method) %>% 
+    mutate(up = sort(time)[4], down = sort(time)[2],time = median(time)) %>% 
+    ggplot(aes(n, time, color = method, fill = method)) +
+        geom_ribbon(aes(ymin = down, ymax = up), alpha = .3, linetype=2) +
+        geom_line(lwd = .7) +
+        scale_y_log10() +
+        labs(x = 'Sample size', y = 'Runtime (sec)')
+#ggsave('linear_n.pdf')
+```
+
+
+  

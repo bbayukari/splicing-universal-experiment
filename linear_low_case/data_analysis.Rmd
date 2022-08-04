@@ -1,0 +1,28 @@
+---
+title: "data_analysis"
+author: "王泽植"
+date: '2022-07-26'
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+df = read.csv('linear_rho-0.2_snr-6_timelimit-3600_complete-sparsity.csv')
+df = as_tibble(df)
+```
+
+p=50,n=50,k from 1 to 50 
+
+gurobi增长的速度没有慢到组合数级别
+
+```{r}
+df %>% 
+    filter(p==50,n==50) %>% 
+    ggplot() +
+    scale_y_log10() +
+    geom_point(aes(k,choose(50,k)/100))+
+    geom_point(aes(k,autodiff_time), color='#00BFC4') +
+    geom_point(aes(k,gurobi_time), color='#F8766D') +
+    geom_smooth(aes(k,autodiff_time), method = 'lm', formula = y ~ x, color='#00BFC4')
+```
+
