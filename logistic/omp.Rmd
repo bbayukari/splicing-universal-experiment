@@ -1,0 +1,88 @@
+---
+title: "omp"
+output: html_document
+date: '2022-08-04'
+---
+
+```{r}
+library(tidyverse)
+info = read_csv('data/info.csv')
+data = read_csv('data/data.csv')
+```
+```{r}
+library(Rfast)
+
+omp_logistic <- function (y, x, support_size) 
+{
+  tic <- proc.time()
+  dm <- dim(x)
+  d <- dm[2]
+  n <- dm[1]
+  ind <- 1:d
+  x <- Rfast::standardise(x)
+  oop <- options(warn = -1)
+  on.exit(options(oop))
+
+  p <- sum(y)/n
+  ela <- Rfast::eachcol.apply(x, y)
+  sel <- which.max(abs(ela))
+  sela <- sel
+  names(sela) <- NULL
+  mod <- Rfast::glm_logistic(x[, sel], y)
+  est <- exp(-mod$be[1] - x[, sel] * mod$be[2])
+  res <- y - 1/(1 + est)
+  ind[sel] <- 0
+  i <- 2
+  for(index in seq_len(support_size-1)) {
+    r <- numeric(d)
+    i <- i + 1
+    r[ind] <- Rfast::eachcol.apply(x, res, indices = ind[ind > 
+      0], oper = "*", apply = "sum")
+    sel <- which.max(abs(r))
+    sela <- c(sela, sel)
+    mod <- Rfast::glm_logistic(x[, sela], y)
+    est <- as.vector(exp(-mod$be[1] - x[, sela] %*% 
+      mod$be[-1]))
+    res <- y - 1/(1 + est)
+    ind[sela] <- 0
+  }
+
+  list(runtime = proc.time() - tic, info = sela)
+}
+
+```
+
+```{r}
+n = c()
+time = c()
+accuracy = c()
+for(idx in info$id){
+  x = data %>% 
+  filter(id==idx) %>% 
+  select(starts_with('X')) %>% 
+  as.matrix()
+
+  y = data %>% 
+    filter(id==idx) %>% 
+    select(y) %>% 
+    as.matrix() %>% 
+    as.vector()
+  
+  coef = info %>% 
+    filter(id==idx) %>% 
+    select(starts_with('B')) %>% 
+    as.matrix() %>% 
+    as.vector()
+  
+  r = omp_logistic(y,x,support_size = 10)
+  
+  n = c(n, length(y))
+  accuracy = c(accuracy, length(intersect(r$info, which(coef!=0))) / 10)
+  time = c(time, r[["runtime"]][["elapsed"]])
+}
+```
+
+```{r}
+tibble(method = 'omp',n=n,time=time,accuracy=accuracy) %>% 
+  write_csv('results/omp.csv')
+```

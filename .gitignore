@@ -1,1 +1,7 @@
-*.csv
+*/data/
+.vscode/
+.Rhistory
+logs/
+nohup.out
+tem*
+*/__pycache__/
