@@ -86,3 +86,52 @@ for(idx in info$id){
 tibble(method = 'omp',n=n,time=time,accuracy=accuracy) %>% 
   write_csv('results/omp.csv')
 ```
+
+
+```{r}
+library(abess)
+test_omp <- function(n,p,support.size,rho,snr,seed){
+  dataset <- generate.data(n, p, support.size,
+    family = "binomial", seed = seed, cortype = 2, rho = rho, snr = snr
+  )
+
+  r = omp_logistic(dataset[["y"]],dataset[["x"]],support_size = support.size)
+  
+  list(
+    n = length(dataset[["y"]]),
+    accuracy = length(intersect(r$info, which(dataset$beta!=0))) / support.size,
+    time = r[["runtime"]][["elapsed"]]
+  )
+}
+```
+```{r}
+n_list = seq.int(500,11000,700)
+seed = 12
+
+ns = c()
+time = c()
+accuracy = c()
+for(n in n_list){
+  r = test_omp(n,p=1000,support.size=10,rho=0.7,snr=0.05,seed=seed)
+  seed = seed + 1
+  ns = c(ns, r$n)
+  accuracy = c(accuracy, r$accuracy)
+  time = c(time, r$time)
+}
+```
+
+
+```{r}
+High.noise.High.correlation = tibble(n=ns,time=time,accuracy=accuracy) 
+```
+
+```{r}
+High.noise.High.correlation
+```
+
+```{r}
+tibble(n=ns,time=time,accuracy=accuracy) %>%
+  ggplot(aes(n,accuracy)) +
+    geom_point()
+```
+

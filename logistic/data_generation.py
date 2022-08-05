@@ -4,15 +4,15 @@ import pandas as pd
 
 df1 = []
 df2 = []
-n_list = [n*100+100 for n in range(10)]
+n_list = range(500,2501,400)
 
 for n in n_list:
-    for _ in range(5):
-        p = 500
+    for _ in range(1):
+        p = 10000
         data = make_glm_data(
             n=n,
             p=p,
-            k=10,
+            k=100,
             rho=0.2,
             family="binomial",
             corr_type="exp",

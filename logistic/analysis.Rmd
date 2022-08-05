@@ -17,8 +17,11 @@ df = abess %>%
 ```
 
 ```{r}
-ggplot(df,aes(n,accuracy,color = method)) +
-  #geom_point() +
-  geom_jitter()
+df %>% 
+  filter(n<=300) %>% 
+  mutate(across(n,as.factor)) %>% 
+  ggplot(aes(n,accuracy,fill = method)) +
+    geom_boxplot() 
+ 
 ```
 
