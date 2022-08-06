@@ -6,14 +6,27 @@ date: '2022-08-05'
 
 ```{r}
 library(tidyverse)
-abess = read_csv('results/abess.csv')
-omp = read_csv('results/omp.csv')
+abess = read_csv('results/abess_2.csv')
+omp = read_csv('results/omp_2.csv')
 ```
 
 ```{r}
 df = abess %>% 
   select(-...1) %>% 
   bind_rows(omp)
+
+#df = bind_rows(old_data, df)
+```
+
+```{r}
+df %>% 
+  group_by(n,method) %>% 
+  summarise(accuracy = mean(accuracy)) %>% 
+  ggplot(aes(n,accuracy,color = method)) +
+    geom_line() +
+    geom_point() +
+    labs(y='Accuracy',x='sample size')
+ 
 ```
 
 ```{r}

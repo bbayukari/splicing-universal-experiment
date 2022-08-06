@@ -53,6 +53,7 @@ omp_logistic <- function (y, x, support_size)
 ```
 
 ```{r}
+support.size = 20
 n = c()
 time = c()
 accuracy = c()
@@ -74,19 +75,21 @@ for(idx in info$id){
     as.matrix() %>% 
     as.vector()
   
-  r = omp_logistic(y,x,support_size = 10)
+  r = omp_logistic(y,x,support_size = support.size)
   
   n = c(n, length(y))
-  accuracy = c(accuracy, length(intersect(r$info, which(coef!=0))) / 10)
+  accuracy = c(accuracy, length(intersect(r$info, which(coef!=0))) / support.size)
   time = c(time, r[["runtime"]][["elapsed"]])
 }
 ```
 
 ```{r}
 tibble(method = 'omp',n=n,time=time,accuracy=accuracy) %>% 
-  write_csv('results/omp.csv')
+  write_csv('results/omp_2.csv')
 ```
 
+
+## use data from R
 
 ```{r}
 library(abess)
