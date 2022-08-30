@@ -1,0 +1,70 @@
+---
+title: "analysis"
+output: html_document
+date: '2022-08-31'
+---
+
+```{r}
+library(tidyverse)
+df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/GraHTP/GraHTP_linear.csv') %>% 
+  select(-...1)
+```
+
+```{r}
+step_size = df %>% 
+  select(n, min_step_size)
+
+df2 = bind_rows(
+  df %>% 
+    select(n,time=abess_time,accuracy=abess_accuracy) %>% 
+    mutate(method = 'abess'),
+  df %>% 
+    select(n,time=GraHTP_1_time,accuracy=GraHTP_1_accuracy) %>% 
+    mutate(method = 'GraHTP_1'),
+  df %>% 
+    select(n,time=GraHTP_5_time,accuracy=GraHTP_5_accuracy) %>% 
+    mutate(method = 'GraHTP_5'),
+  df %>% 
+    select(n,time=GraHTP_cv_time,accuracy=GraHTP_cv_accuracy) %>% 
+    mutate(method = 'GraHTP_cv')  
+) 
+```
+
+## step size
+
+```{r}
+step_size %>% 
+  group_by(n) %>% 
+  summarise(step = mean(min_step_size)) %>% 
+  ggplot(aes(n,step)) +
+    geom_line()
+```
+
+
+## accuracy
+
+```{r}
+#p1 = 
+df2 %>% 
+  mutate(across(method, ~ ifelse(.x=='GraHTP_1', 'GraHTP_0.001', .x))) %>% 
+  mutate(across(method, ~ ifelse(.x=='GraHTP_5', 'GraHTP_0.005', .x))) %>% 
+  filter(n%%100==0) %>% 
+  group_by(n,method) %>% 
+  summarise(accuracy = mean(accuracy)) %>%
+  ggplot(aes(n, accuracy, color = method)) +
+    labs(x='Sample size', y='Accuracy') +
+    geom_line() +
+    geom_point()
+```
+
+## time
+
+```{r}
+df2 %>% 
+  filter(method!='GraHTP_cv') %>% 
+  filter(n%%200==0) %>% 
+  mutate(across(n, as.factor)) %>% 
+  ggplot(aes(n, time, color = method)) +
+    #scale_y_log10() +
+    geom_boxplot() 
+```
