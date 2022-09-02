@@ -26,10 +26,10 @@ def abess_quadratic_user_define(model_size, support_size, data):
     model.set_loss(quadratic)
     model.set_gradient(quadratic_grad)
     model.set_hessian(quadratic_hessian)
-
+    t1 = time.time()
     model.fit()
-
-    return model.coef_    
+    t2 = time.time()
+    return model.coef_, t2-t1
 
 if __name__ == "__main__":
     np.random.seed(234)

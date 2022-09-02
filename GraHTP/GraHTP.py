@@ -12,8 +12,8 @@ def GraHTP(
     fast=False,
     relaxed_sparsity_level=0,
     init_x=None,
-    step_size=0.1,
-    max_iter=10000,
+    step_size=0.01,
+    max_iter=100,
 ):
     """
     Select features by GraHTP algorithm
@@ -33,8 +33,8 @@ def GraHTP(
         init_x: the initial value of the args 'x' in f
 
     Returns:
-        suppport set: int array with the shape of (k,)
         estimator: array with the shape of (p,) which contains k nonzero entries
+        iter: the number of iterations
     """
     if init_x is None:
         init_x = np.zeros(p)
@@ -44,50 +44,54 @@ def GraHTP(
         k = relaxed_sparsity_level
     
     # init
-    _, grad = f(init_x, np.arange(p), data)
-    x_old = - step_size * grad
-    suppport_old = np.argpartition(np.abs(x_old), -k)[-k:]
+    x_old = init_x
+    support_old = np.argpartition(np.abs(x_old), -k)[-k:]
 
-    for _ in range(max_iter):
+    for iter in range(max_iter):
         # S1: gradient descent
-        _, grad = f(x_old, np.arange(p), data)
-        x_new = x_old - step_size * grad
+        objective_value_old, grad = f(x_old, np.arange(p), data)
+        x_new_full = x_old - step_size * grad
         # S2: Gradient Hard Thresholding
-        suppport_new = np.argpartition(np.abs(x_new), -k)[-k:]
+        support_new = np.argpartition(np.abs(x_new_full), -k)[-k:]
         # S3: debise
         if fast:
-            non_supp = np.array([True] * p)
-            non_supp[suppport_new] = False
-            x_new[non_supp] = 0.0
-        else:
-            def opt_f(x_supp, grad_supp):
-                x_full = np.zeros(p)
-                x_full[suppport_new] = x_supp
-                if grad_supp.size > 0:
-                    value, grad_supp[:] = f(x_full, suppport_new, data)
-                    return value
-                else:
-                    value, _ = f(x_full, np.zeros(0), data)
-                    return value
-
-            x_opt_init = x_new[suppport_new].copy()
-            opt = nlopt.opt(nlopt.LD_LBFGS, k)
-            opt.set_min_objective(opt_f)
             x_new = np.zeros(p)
-            x_new[suppport_new] = opt.optimize(x_opt_init)
+            x_new[support_new] = x_new_full[support_new]
+        else:
+            try:
+                def opt_f(x_supp, grad_supp):
+                    x_full = np.zeros(p)
+                    x_full[support_new] = x_supp
+                    if grad_supp.size > 0:
+                        value, grad_supp[:] = f(x_full, support_new, data)
+                        return value
+                    else:
+                        value, _ = f(x_full, np.zeros(0), data)
+                        return value
+
+                x_opt_init = x_new_full[support_new].copy()
+                opt = nlopt.opt(nlopt.LD_LBFGS, k)
+                opt.set_min_objective(opt_f)
+                x_new = np.zeros(p)
+                x_new[support_new] = opt.optimize(x_opt_init)
+            except RuntimeError:
+                raise
         # terminating condition
-        if np.all(set(suppport_old) == set(suppport_new)):
+        if np.all(set(support_old) == set(support_new)):
             break
+        else:
+            x_old = x_new.copy()
+            support_old = support_new.copy()
 
     if k > final_support_size:
-        suppport_new = np.argpartition(np.abs(x_new), -final_support_size)[
+        support_new = np.argpartition(np.abs(x_new), -final_support_size)[
             -final_support_size:
         ]
         non_supp = np.array([True] * p)
-        non_supp[suppport_new] = False
+        non_supp[support_new] = False
         x_new[non_supp] = 0.0
 
-    return suppport_new, x_new
+    return x_new, iter
 
 def quadratic(x, supp, data):
     """
@@ -111,13 +115,13 @@ def quadratic(x, supp, data):
 
     return (value, grad)
 
-def GraHTP_quadratic(p,k, data):
-    return GraHTP(quadratic, p, k, data)
+
+
 
 if __name__ == "__main__":
-    np.random.seed(2334)
-    n = 500
-    p = 500
+    np.random.seed(1)
+    n = 200
+    p = 200
     k = 20
     from abess import make_glm_data
 
@@ -133,15 +137,17 @@ if __name__ == "__main__":
     )
 
     t1 = time.time()
-    supp, beta = GraHTP(
+    beta, iter = GraHTP(
         quadratic,
         p,
         k,
+        step_size=0.001,
         #fast=True,
         #relaxed_sparsity_level=k,
+        max_iter=100,
         data={"A": data_set.x.T @ data_set.x, "B": -2 * data_set.x.T @ data_set.y}
     )
     t2 = time.time()
-
+    print(iter)
     print(t2 - t1)
     print(MyTest.accuracy(beta, data_set.coef_))
