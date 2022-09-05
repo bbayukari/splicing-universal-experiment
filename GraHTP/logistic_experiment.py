@@ -13,14 +13,14 @@ from abess_user_define import abess_logistic
 def task(n, p, k):
     result = {}
     # repeat until no exception
-    for iter in range(100):
+    for iter in range(10):
         try:
             data = make_glm_data(
                 n=n,
                 p=p,
                 k=k,
                 rho=0.2,
-                family="gaussian",
+                family="binomial",
                 corr_type="exp",
                 snr=10 * np.log10(6),
                 standardize=True,
@@ -51,17 +51,18 @@ def task(n, p, k):
                 data=data,
             )
             t3 = time.time()
-
-            abess_coef, result["abess_time"] = abess_logistic(
+            abess_coef = abess_logistic(
                 p, k, data
             )
+            t4 = time.time()
 
             result["GraHTP_cv_time"] = t1 - t0
+            result["GraHTP_cv_accuracy"] = MyTest.accuracy(GraHTP_cv_coef, data.coef_)
             result["GraHTP_1_time"] = t2 - t1
             result["GraHTP_1_accuracy"] = MyTest.accuracy(GraHTP_1_coef, data.coef_)
             result["GraHTP_5_time"] = t3 - t2
             result["GraHTP_5_accuracy"] = MyTest.accuracy(GraHTP_5_coef, data.coef_)
-            result["GraHTP_cv_accuracy"] = MyTest.accuracy(GraHTP_cv_coef, data.coef_)
+            result["abess_time"] = t4 - t3
             result["abess_accuracy"] = MyTest.accuracy(abess_coef, data.coef_)
             break
         except RuntimeError:
@@ -86,9 +87,9 @@ if __name__ == "__main__":
         for term in ["accuracy", "time"]
         for method in ["abess", "GraHTP_5", "GraHTP_1", "GraHTP_cv"]
     ] + ["min_step_size"]
-    test = MyTest.Test(task, in_keys, out_keys, processes=40, name="GraHTP_logistic_test")
+    test = MyTest.Test(task, in_keys, out_keys, processes=20, name="GraHTP_logistic_test")
 
-    # test.check(n=20,p=3,k=3)
+    #test.check(n=10,p=5,k=3)
 
     para = (
         list(

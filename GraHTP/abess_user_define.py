@@ -34,7 +34,7 @@ if __name__ == "__main__":
     k = 300
     
     quadratic = False
-    logistic = False
+    logistic = True
 
     if quadratic:
         data_set = make_glm_data(
