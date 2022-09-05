@@ -1,0 +1,89 @@
+---
+title: "analysis"
+output: html_document
+date: '2022-08-31'
+---
+
+```{r}
+library(tidyverse)
+df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/GraHTP/GraHTP_linear.csv') %>% 
+  select(-...1)
+```
+
+```{r}
+library(tidyverse)
+df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/GraHTP/GraHTP_linear_step_1e-2.csv') %>% 
+  select(-...1)
+```
+
+
+```{r}
+df2 = bind_rows(
+  df %>% 
+    select(n,p,k,time=abess_time,accuracy=abess_accuracy) %>% 
+    mutate(method = 'abess'),
+  df %>% 
+    select(n,p,k,time=GraHTP_time,accuracy=GraHTP_accuracy) %>% 
+    mutate(method = 'GraHTP')  
+)
+```
+
+## accuracy
+
+```{r}
+df2 %>% 
+  filter(p==200,k==20) %>% 
+  group_by(n,method) %>% 
+  summarise(accuracy = mean(accuracy)) %>%
+  ggplot(aes(n, accuracy, color = method)) +
+    geom_line() 
+```
+
+```{r}
+df2 %>% 
+  filter(n==200,k==20) %>% 
+  group_by(p,method) %>% 
+  summarise(accuracy = mean(accuracy)) %>%
+  ggplot(aes(p, accuracy, color = method)) +
+    geom_line() 
+```
+
+```{r}
+df2 %>% 
+  filter(n==200,p==200) %>% 
+  group_by(k,method) %>% 
+  summarise(accuracy = mean(accuracy)) %>%
+  ggplot(aes(k, accuracy, color = method)) +
+    geom_line() 
+```
+
+
+## time
+
+```{r}
+df2 %>% 
+  filter(p==200,k==20) %>% 
+  group_by(n,method) %>% 
+  summarise(time = mean(time)) %>%
+  ggplot(aes(n, time, color = method)) +
+    geom_line() 
+```
+
+```{r}
+df2 %>% 
+  filter(n==200,k==20) %>% 
+  group_by(p,method) %>% 
+  summarise(time = mean(time)) %>%
+  ggplot(aes(p, time, color = method)) +
+    geom_line() 
+```
+
+```{r}
+df2 %>% 
+  filter(n==200,p==200) %>% 
+  group_by(k,method) %>% 
+  #summarise(time = mean(time)) %>%
+  ggplot(aes(k, time, color = method)) +
+    geom_point() 
+```
+

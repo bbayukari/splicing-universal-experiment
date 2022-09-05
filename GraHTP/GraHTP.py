@@ -63,7 +63,7 @@ def GraHTP(
 
                 opt = nlopt.opt(nlopt.LD_SLSQP, support_size)
                 opt.set_min_objective(opt_f)
-                opt.set_xtol_rel(1e-4)
+                opt.set_ftol_rel(0.001)
                 x_new = np.zeros(dim)
                 x_new[support_new] = opt.optimize(x_bias[support_new])
             except RuntimeError:
@@ -113,8 +113,8 @@ if __name__ == "__main__":
     p = 5
     k = 3
     
-    quadratic = True
-    logistic = False
+    quadratic = False
+    logistic = True
 
     if quadratic:
         data_set = make_glm_data(

@@ -1,3 +1,4 @@
+from math import exp, log
 import numpy as np
 
 
@@ -76,7 +77,7 @@ def loss_logistic(beta, data, active_index=None):
     if active_index is None:
         active_index = np.arange(beta.size)
     Xbeta = np.matmul(data.x[:, active_index], beta[active_index])
-    return np.sum(np.log(1 + np.exp(Xbeta))) - np.dot(data.y, Xbeta)
+    return sum([x if x > 100 else 0.0 if x < -100 else log(1+exp(x)) for x in Xbeta]) - np.dot(data.y, Xbeta)
 
 
 def grad_logistic(beta, data, active_index=None, compute_index=None):
@@ -100,7 +101,7 @@ def grad_logistic(beta, data, active_index=None, compute_index=None):
     Xbeta = np.matmul(data.x[:, active_index], beta[active_index])
     return np.matmul(
         data.x[:, compute_index].T,
-        1 / (1 + np.exp(-Xbeta)) - data.y
+        np.array([0.0 if x<-100 else 1.0 if x>100 else 1/(1+exp(-x)) for x in Xbeta]) - data.y
     )
 
 def hessian_logistic(beta, data, active_index=None, compute_index=None):
@@ -124,9 +125,7 @@ def hessian_logistic(beta, data, active_index=None, compute_index=None):
     Xbeta = np.matmul(data.x[:, active_index], beta[active_index])
     return np.matmul(
         data.x[:, compute_index].T,
-        np.matmul(
-            np.diag(1 / (np.exp(Xbeta) + np.exp(-Xbeta) + 2)),
-            data.x[:, compute_index]
-        )
+        np.array([1/(exp(x)+exp(-x)+2) if abs(x)<100 else 0.0 for x in Xbeta])[:,np.newaxis] 
+        * data.x[:, compute_index]
     )
    
