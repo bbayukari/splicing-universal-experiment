@@ -1,0 +1,97 @@
+---
+title: "logistic_analysis"
+output: html_document
+date: '2022-09-04'
+---
+
+```{r}
+library(tidyverse)
+r = readLines("logistic_result.txt")
+r = r[str_starts(r,'\\{')]
+```
+
+
+```{r}
+df = r %>% 
+  str_extract_all("(-?[1-9]\\d*\\.?\\d*)|(-?0\\.\\d*[0-9])") %>% 
+  sapply(as.matrix) %>% 
+  t() %>% 
+  as_tibble()
+```
+
+```{r}
+colnames(df) = c('n', 'p', 'k', 'step', 'GraHTP_cv_time', 'GraHTP_cv_accuracy', 'X1', 'GraHTP_1_time', 'X2', 'GraHTP_1_accuracy', 'X3', 'GraHTP_5_time', 'X4', 'GraHTP_5_accuracy', 'abess_time', 'abess_accuracy')
+```
+
+```{r}
+df = df %>% 
+  select(-starts_with('X'))
+```
+
+```{r}
+df %>% 
+  group_by(n) %>% 
+  count()
+```
+
+
+```{r}
+step_size = 
+  df %>% 
+  select(n, step) %>% 
+  mutate(across(everything(), as.numeric))
+
+df2 = bind_rows(
+  df %>% 
+    select(n,time=abess_time,accuracy=abess_accuracy) %>% 
+    mutate(method = 'abess'),
+  df %>% 
+    select(n,time=GraHTP_1_time,accuracy=GraHTP_1_accuracy) %>% 
+    mutate(method = 'GraHTP_1'),
+  df %>% 
+    select(n,time=GraHTP_5_time,accuracy=GraHTP_5_accuracy) %>% 
+    mutate(method = 'GraHTP_5'),
+  df %>% 
+    select(n,time=GraHTP_cv_time,accuracy=GraHTP_cv_accuracy) %>% 
+    mutate(method = 'GraHTP_cv')  
+) %>% 
+  mutate(across(-method, as.numeric))
+```
+
+## optimal step size of GraHTP
+
+```{r}
+step_size %>% 
+  mutate(across(step, as.factor)) %>% 
+  #group_by(n) %>% 
+  #summarise(step = mean(step)) %>% 
+  ggplot(aes(n,step)) +
+    geom_point()
+```
+## accurary
+
+```{r}
+#p2 = 
+df2 %>% 
+  mutate(across(method, ~ ifelse(.x=='GraHTP_1', 'GraHTP_0.001', .x))) %>% 
+  mutate(across(method, ~ ifelse(.x=='GraHTP_5', 'GraHTP_0.005', .x))) %>% 
+  #filter(n%%100==0) %>% 
+  group_by(n,method) %>% 
+  summarise(accuracy = mean(accuracy)) %>%
+  ggplot(aes(n, accuracy, color = method)) +
+    labs(x='Sample size', y='Accuracy') +
+    geom_line() +
+    geom_point()
+```
+
+## time
+
+```{r}
+df2 %>% 
+  filter(method!='GraHTP_cv') %>% 
+  filter(n%%200==0) %>% 
+  mutate(across(n, as.factor)) %>% 
+  ggplot(aes(n, time, color = method)) +
+    scale_y_log10() +
+    geom_boxplot() 
+```
