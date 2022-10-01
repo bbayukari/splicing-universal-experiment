@@ -22,6 +22,15 @@ def abess_logistic(model_size, support_size, data):
 
     return model.coef_
 
+def abess_huber(model_size, support_size, data, delta=1.35):
+    model = ConvexSparseSolver(model_size, support_size=support_size, regular_coef = 0.1)
+    model.set_data(None)
+    model.set_loss(lambda x, intercept, _data: M.loss_huber(x,data, delta=delta))
+    model.set_gradient(lambda x, intercept, _data, supp: M.grad_huber(x, data, compute_index = supp, delta=delta))
+    model.set_hessian(lambda x, intercept, _data, supp: M.hessian_huber(x, data, compute_index = supp, delta=delta))
+    model.fit()
+
+    return model.coef_
 
 if __name__ == "__main__":
     import MyTest
@@ -29,12 +38,13 @@ if __name__ == "__main__":
     from abess import make_glm_data 
 
     np.random.seed(234)
-    n = 1000
-    p = 500
-    k = 300
+    n = 10
+    p = 5
+    k = 3
     
     quadratic = False
-    logistic = True
+    logistic = False
+    huber = True
 
     if quadratic:
         data_set = make_glm_data(
@@ -66,6 +76,23 @@ if __name__ == "__main__":
         )
         t1 = time.time()
         beta = abess_logistic(p, k, data = data_set)
+        t2 = time.time()
+        print(t2 - t1)
+        print(MyTest.accuracy(beta, data_set.coef_))
+
+    if huber:
+        data_set = make_glm_data(
+            n=n,
+            p=p,
+            k=k,
+            rho=0.2,
+            family="gaussian",
+            corr_type="exp",
+            snr=10 * np.log10(6),
+            standardize=True,
+        )
+        t1 = time.time()
+        beta = abess_huber(p, k, data = data_set)
         t2 = time.time()
         print(t2 - t1)
         print(MyTest.accuracy(beta, data_set.coef_))
