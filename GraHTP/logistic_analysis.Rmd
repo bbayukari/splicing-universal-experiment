@@ -13,7 +13,7 @@ r = r[str_starts(r,'\\{')]
 
 ```{r}
 df = r %>% 
-  str_extract_all("(-?[1-9]\\d*\\.?\\d*)|(-?0\\.\\d*[0-9])") %>% 
+  str_extract_all("(-?[0-9]\\d*\\.?\\d*)|(-?0\\.\\d*[0-9])") %>% 
   sapply(as.matrix) %>% 
   t() %>% 
   as_tibble()

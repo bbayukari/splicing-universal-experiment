@@ -1,0 +1,94 @@
+---
+title: "analysis"
+output: html_document
+date: '2022-08-31'
+---
+
+```{r}
+library(tidyverse)
+df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/group_linear/group_linear.csv') %>% 
+  select(-...1)
+```
+
+```{r}
+df2 = bind_rows(
+  df %>% 
+    select(p,k,sigma,time=autodiff_time,accuracy=autodiff_accuracy) %>% 
+    mutate(method = 'abess'),
+  df %>% 
+    select(p,k,sigma,time=lasso_time,accuracy=lasso_accuracy) %>% 
+    mutate(method = 'LASSO_cv'),
+  #df %>% 
+  #  select(p,k,sigma,time=lasso_time,accuracy=lasso_1_accuracy) %>% 
+  #  mutate(method = 'LASSO_1'),
+  df %>% 
+    select(p,k,sigma,time=lasso_time,accuracy=lasso_10_accuracy) %>% 
+    mutate(method = 'LASSO_10')
+) 
+```
+
+
+## accuracy
+
+```{r}
+#p1 = 
+my_plot_accuracy <- function(support_size){
+  f = df2 %>% 
+    filter(k==support_size) %>%
+    #filter(method %in% c('LASSO_cv','abess')) %>%
+    group_by(p,method) %>% 
+    summarise(ymin = sort(accuracy)[2], ymax = sort(accuracy)[4], accuracy = mean(accuracy)) %>%
+    ggplot(aes(p, accuracy, color = method)) +
+      labs(x='Number of time series', y='Accuracy') +
+      geom_line() +
+      geom_point() 
+  print(f)
+}
+
+```
+
+```{r}
+my_plot_accuracy(5)
+ggsave('cp.pdf',width = 8)
+```
+
+```{r}
+df2 %>% 
+    filter(k==5,abs(sigma^2-0.2)<0.01) %>%
+    #filter(method %in% c('lasso','BESS')) %>%
+    group_by(p,method) %>% 
+    summarise(time = mean(time)) %>%
+    ggplot(aes(p, time, color = method)) +
+      labs(x='Number of time series', y='time') +
+      #scale_y_continuous(limits = c(0,1)) +
+      #scale_x_continuous(breaks = seq(1,11,1)) +
+      geom_line() +
+      geom_point() 
+```
+
+
+## time
+
+```{r}
+my_plot_time <- function(support_size, var){
+  f = df2 %>% 
+    filter(k==support_size,abs(sigma^2-var)<0.01) %>%
+    filter(method %in% c('lasso','autodiff')) %>%
+    group_by(p,method) %>% 
+    summarise(time = mean(time)) %>%
+    ggplot(aes(p, time, color = method)) +
+      labs(x='Sample size', y='Time') +
+      geom_line() +
+      geom_point()
+  print(f)
+}
+```
+
+```{r}
+for(s in c(1,5)){
+  for(v in c(0.05,0.2,1)){
+    my_plot_time(s,v)
+  }
+}
+```
+

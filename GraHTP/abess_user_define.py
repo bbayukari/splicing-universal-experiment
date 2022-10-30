@@ -36,15 +36,17 @@ if __name__ == "__main__":
     import MyTest
     import time
     from abess import make_glm_data 
+    from abess import pybind_cabess
+    pybind_cabess.init_spdlog(console_log_level=0, file_log_level=6)
 
     np.random.seed(234)
     n = 10
     p = 5
     k = 3
     
-    quadratic = False
+    quadratic = True
     logistic = False
-    huber = True
+    huber = False
 
     if quadratic:
         data_set = make_glm_data(

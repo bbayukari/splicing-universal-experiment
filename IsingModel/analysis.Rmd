@@ -1,0 +1,89 @@
+---
+title: "analysis"
+output: html_document
+date: '2022-08-31'
+---
+
+
+```{r}
+library(tidyverse)
+r = readLines("/data/home/wangzz/github/splicing-universal-experiment/IsingModel/nohup.out")
+r = r[str_starts(r,'\\{')]
+```
+
+
+```{r}
+df = r %>% 
+  str_extract_all("(-?[0-9]\\d*\\.?\\d*)|(-?0\\.\\d*[0-9])") %>% 
+  sapply(as.matrix) %>% 
+  t() %>% 
+  as_tibble()
+```
+
+```{r}
+colnames(df) = c('n', 'p', 'k', 'seed', 'true_seed', 'abess_accuracy', 'abess_time' , 'wainwright_min_accuracy', 'wainwright_min_time' , 'wainwright_max_accuracy', 'wainwright_max_time')
+df = df %>% 
+  mutate(across(everything(), as.numeric)) 
+```
+
+## count
+
+```{r}
+df %>% group_by(n) %>% count()
+```
+
+There is 6 missing data, but I decide to ignore them.
+
+```{r}
+df2 = bind_rows(
+  df %>% 
+    select(n,time=abess_time,accuracy=abess_accuracy) %>% 
+    mutate(method = 'abess'),
+  df %>% 
+    select(n,time=wainwright_min_time,accuracy=wainwright_min_accuracy) %>% 
+    mutate(method = 'Wainwright_Min'),
+  df %>% 
+    select(n,time=wainwright_max_time,accuracy=wainwright_max_accuracy) %>% 
+    mutate(method = 'Wainwright_Max')
+) 
+```
+
+## accuracy
+
+
+```{r}
+df2 %>% 
+  group_by(n,method) %>% 
+  summarise(accuracy = mean(accuracy)) %>% 
+  ggplot(aes(n, accuracy, color = method)) +
+    labs(x='Sample size', y='Accuracy') +
+    #scale_y_continuous(limits = c(0,1)) +
+    geom_line() +
+    geom_point()
+
+```
+
+
+```{r}
+ggplot(df, aes(n, abess_time)) +
+  labs(x='Sample size', y='Runtime (sec)') +
+  geom_smooth(method = 'lm') +
+  geom_point()
+```
+
+
+## time
+
+```{r}
+my_plot_time <- function(support_size, var){
+  df2 %>% 
+    filter(k==support_size,abs(sigma^2-var)<0.01) %>%
+    filter(method %in% c('lasso','autodiff')) %>%
+    group_by(p,method) %>% 
+    summarise(time = mean(time)) %>%
+    ggplot(aes(p, time, color = method)) +
+      labs(x='Sample size', y='Time') +
+      geom_line() +
+      geom_point()
+}
+```

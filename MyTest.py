@@ -86,6 +86,7 @@ class Test:
             raise RuntimeError("in_parameter's keys do not match!\n{}\n{}".format(self.in_keys, set(in_para.keys())))
 
         result = self.task(**in_para)
+        print(result)
 
         if not isinstance(result, dict) or set(result.keys()) != set(self.out_keys):
             raise RuntimeError("out_parameter's keys do not match!\n{}\n{}".format(self.out_keys, set(result.keys())))
