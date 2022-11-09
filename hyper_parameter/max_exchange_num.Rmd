@@ -1,0 +1,77 @@
+---
+title: "analysis"
+output: html_document
+date: '2022-08-31'
+---
+
+```{r}
+library(tidyverse)
+df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/hyper_parameter/max_exchange_num.csv') %>% 
+  select(-...1)
+```
+
+```{r}
+df2 = bind_rows(
+  df %>% 
+    select(n,p,time=time_2,accuracy=accuracy_2) %>% 
+    mutate(max_exchange_num = '2'),
+  df %>% 
+    select(n,p,time=time_5,accuracy=accuracy_5) %>% 
+    mutate(max_exchange_num = '5'),  
+  df %>% 
+    select(n,p,time=time_10,accuracy=accuracy_10) %>% 
+    mutate(max_exchange_num = '10'),
+  df %>% 
+    select(n,p,time=time_15,accuracy=accuracy_15) %>% 
+    mutate(max_exchange_num = '15'),
+  df %>% 
+    select(n,p,time=time_20,accuracy=accuracy_20) %>% 
+    mutate(max_exchange_num = '20')
+) 
+```
+
+
+```{r}
+df_p = 
+  df2 %>% 
+  filter(n==200) %>% 
+  group_by(p,max_exchange_num) %>% 
+  summarise(accuracy = mean(accuracy), time = mean(time)) 
+
+df_n = 
+  df2 %>% 
+  filter(p==200) %>% 
+  group_by(n,max_exchange_num) %>% 
+  summarise(accuracy = mean(accuracy), time = mean(time))
+```
+
+## plot
+
+```{r}
+ggplot(df_p, aes(p, accuracy, color = max_exchange_num)) +
+    labs(x='Dimension', y='Accuracy') +
+    geom_line() +
+    geom_point()
+```
+
+```{r}
+ggplot(df_p, aes(p, time, color = max_exchange_num)) +
+    labs(x='Dimension', y='Runtime (Sec)') +
+    geom_line() +
+    geom_point()
+```
+
+
+```{r}
+ggplot(df_n, aes(n, accuracy, color = max_exchange_num)) +
+    labs(x='Sample size', y='Accuracy') +
+    geom_line() +
+    geom_point()
+```
+
+```{r}
+ggplot(df_n, aes(n, time, color = max_exchange_num)) +
+    labs(x='Sample size', y='Runtime (Sec)') +
+    geom_line() +
+    geom_point()
+```
