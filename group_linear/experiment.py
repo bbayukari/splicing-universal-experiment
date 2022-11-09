@@ -6,7 +6,7 @@ from abess.universal import ConvexSparseSolver
 import model
 from abess import pybind_cabess
 import sys
-sys.path.append("..")
+sys.path.append("/data/home/wangzz/github/splicing-universal-experiment/")
 import MyTest
 from MyTest import merge_dict
 from MyTest import product_dict
@@ -62,9 +62,9 @@ if __name__ == "__main__":
         task, in_keys, out_keys, processes=40, name="group_linear"
     )
     # if n is very small, out of samples mse cann't be computed.
-    #test.check(n=100,p=3,k=3,sigma=1)
+    test.check(n=100,p=3,k=3,sigma=1)
     #print("check done")
-
+"""
     para = list(MyTest.del_duplicate(
         product_dict(n=[100], p=np.arange(20)+1, k=[1,5], sigma=np.sqrt([0.2]))),
     ) * 20
@@ -72,4 +72,5 @@ if __name__ == "__main__":
     #test start
     test.run(para)
     test.save()
+"""
     

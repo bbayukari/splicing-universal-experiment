@@ -1,0 +1,70 @@
+---
+title: "analysis"
+output: html_document
+date: '2022-08-31'
+---
+
+```{r}
+library(tidyverse)
+df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/hyper_parameter/init_strategy.csv') %>% 
+  select(-...1)
+```
+
+```{r}
+df2 = bind_rows(
+  df %>% 
+    select(n,p,time=strategy_time,accuracy=strategy_accuracy) %>% 
+    mutate(method = 'strategy'),
+  df %>% 
+    select(n,p,time=random_time,accuracy=random_accuracy) %>% 
+    mutate(method = 'random')
+) 
+```
+
+
+```{r}
+df_p = 
+  df2 %>% 
+  filter(n==500) %>% 
+  group_by(p,method) %>% 
+  summarise(accuracy = mean(accuracy), time = mean(time)) 
+
+df_n = 
+  df2 %>% 
+  filter(p==500) %>% 
+  group_by(n,method) %>% 
+  summarise(accuracy = mean(accuracy), time = mean(time))
+```
+
+## plot
+
+```{r}
+ggplot(df_p, aes(p, accuracy, color = method)) +
+    labs(x='Dimension', y='Accuracy') +
+    geom_line() +
+    geom_point()
+```
+
+```{r}
+ggplot(df_p, aes(p, time, color = method)) +
+    labs(x='Dimension', y='Runtime (Sec)') +
+    geom_line() +
+    geom_point()
+```
+
+
+```{r}
+ggplot(df_n, aes(n, accuracy, color = method)) +
+    labs(x='Sample size', y='Accuracy') +
+    geom_line() +
+    geom_point()
+```
+
+```{r}
+ggplot(df_n, aes(n, time, color = method)) +
+    labs(x='Sample size', y='Runtime (Sec)') +
+    geom_line() +
+    geom_point()
+```
+
+
