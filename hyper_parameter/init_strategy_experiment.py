@@ -38,25 +38,31 @@ def task(n ,p, k):
     # run model
     t1 = time.time()
     model.fit()
-    strategy_coef = model.coef_
+    margin_coef = model.coef_
     t2 = time.time()
     model.init_active_set = np.arange(p)
     model.fit()
     random_coef = model.coef_
     t3 = time.time()
+    model.init_active_set = [0]
+    model.fit()
+    sacrifice_coef = model.coef_
+    t4 = time.time()
 
     # return
-    result["strategy_accuracy"] = MyTest.accuracy(strategy_coef, data.coef_)
-    result["strategy_time"] = t2 - t1
+    result["margin_accuracy"] = MyTest.accuracy(margin_coef, data.coef_)
+    result["margin_time"] = t2 - t1
     result["random_accuracy"] = MyTest.accuracy(random_coef, data.coef_)
     result["random_time"] = t3 - t2
+    result["sacrifice_accuracy"] = MyTest.accuracy(sacrifice_coef, data.coef_)
+    result["sacrifice_time"] = t4 - t3
     return result
 
 
 if __name__ == "__main__":
     in_keys = ["n", "p", "k"]
     out_keys = [
-        "strategy_accuracy", "strategy_time", "random_accuracy", "random_time"
+        "margin_accuracy", "margin_time", "random_accuracy", "random_time", "sacrifice_accuracy", "sacrifice_time"
     ] 
     test = MyTest.Test(
         task, in_keys, out_keys, processes=40, name="init_strategy"

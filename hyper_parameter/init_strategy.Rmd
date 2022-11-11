@@ -13,8 +13,11 @@ df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/hyper_para
 ```{r}
 df2 = bind_rows(
   df %>% 
-    select(n,p,time=strategy_time,accuracy=strategy_accuracy) %>% 
-    mutate(method = 'strategy'),
+    select(n,p,time=margin_time,accuracy=margin_accuracy) %>% 
+    mutate(method = 'margin'),
+  df %>% 
+    select(n,p,time=sacrifice_time,accuracy=sacrifice_accuracy) %>% 
+    mutate(method = 'sacrifice'),
   df %>% 
     select(n,p,time=random_time,accuracy=random_accuracy) %>% 
     mutate(method = 'random')

@@ -22,44 +22,30 @@ df2 = bind_rows(
     select(n,p,time=time_10,accuracy=accuracy_10) %>% 
     mutate(max_exchange_num = '10'),
   df %>% 
-    select(n,p,time=time_15,accuracy=accuracy_15) %>% 
-    mutate(max_exchange_num = '15'),
-  df %>% 
     select(n,p,time=time_20,accuracy=accuracy_20) %>% 
-    mutate(max_exchange_num = '20')
+    mutate(max_exchange_num = '20'),
+  df %>% 
+    select(n,p,time=time_30,accuracy=accuracy_30) %>% 
+    mutate(max_exchange_num = '30'),
+  df %>% 
+    select(n,p,time=time_40,accuracy=accuracy_40) %>% 
+    mutate(max_exchange_num = '40'),
+  df %>% 
+    select(n,p,time=time_50,accuracy=accuracy_50) %>% 
+    mutate(max_exchange_num = '50')
 ) 
 ```
 
 
 ```{r}
-df_p = 
-  df2 %>% 
-  filter(n==200) %>% 
-  group_by(p,max_exchange_num) %>% 
-  summarise(accuracy = mean(accuracy), time = mean(time)) 
-
 df_n = 
   df2 %>% 
-  filter(p==200) %>% 
+  filter(p==500) %>% 
   group_by(n,max_exchange_num) %>% 
   summarise(accuracy = mean(accuracy), time = mean(time))
 ```
 
 ## plot
-
-```{r}
-ggplot(df_p, aes(p, accuracy, color = max_exchange_num)) +
-    labs(x='Dimension', y='Accuracy') +
-    geom_line() +
-    geom_point()
-```
-
-```{r}
-ggplot(df_p, aes(p, time, color = max_exchange_num)) +
-    labs(x='Dimension', y='Runtime (Sec)') +
-    geom_line() +
-    geom_point()
-```
 
 
 ```{r}
