@@ -33,15 +33,21 @@ df2 = bind_rows(
   df %>% 
     select(n,p,time=time_50,accuracy=accuracy_50) %>% 
     mutate(max_exchange_num = '50')
-) 
+)
+```
+
+
+```{r}
+df2$max_exchange_num = factor(df2$max_exchange_num,
+  levels = c("2", "5", "10", "20", "30", "40", "50"))
 ```
 
 
 ```{r}
 df_n = 
   df2 %>% 
-  filter(p==500) %>% 
-  group_by(n,max_exchange_num) %>% 
+  filter(p==500, n<=800) %>% 
+  group_by(n,k_max=max_exchange_num) %>% 
   summarise(accuracy = mean(accuracy), time = mean(time))
 ```
 
@@ -49,14 +55,14 @@ df_n =
 
 
 ```{r}
-ggplot(df_n, aes(n, accuracy, color = max_exchange_num)) +
+p1 = ggplot(df_n, aes(n, accuracy, color = k_max)) +
     labs(x='Sample size', y='Accuracy') +
     geom_line() +
     geom_point()
 ```
 
 ```{r}
-ggplot(df_n, aes(n, time, color = max_exchange_num)) +
+p2 = ggplot(df_n, aes(n, time, color = k_max)) +
     labs(x='Sample size', y='Runtime (Sec)') +
     geom_line() +
     geom_point()
