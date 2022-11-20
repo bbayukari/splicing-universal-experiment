@@ -18,10 +18,10 @@ def task(n, seed):
         n=n,
         p=500,
         k=50,
-        rho=0.2,
+        rho=0.1,
         family="gaussian",
         corr_type="exp",
-        snr=10 * np.log10(6),
+        snr=20 * np.log10(6),
         standardize=True,
     )
 
@@ -43,15 +43,16 @@ def task(n, seed):
         loss_fn=statistic_model.linear_loss_no_intercept,
         grad_fn=statistic_model.linear_grad_no_intercept,
         dim=500,
-        data=data,
+        data=statistic_model_pybind.RegressionData(data.x, data.y),
         support_size=50,
+        step_size=1e-3,
     )
     t3 = time.time()
     GraHTP_cv_coef, best_step_size = variable_select_algorithm.GraHTP_cv(
         loss_fn=statistic_model.linear_loss_no_intercept,
         grad_fn=statistic_model.linear_grad_no_intercept,
         dim=500,
-        data=data,
+        data=statistic_model_pybind.RegressionData(data.x, data.y),
         support_size=50,
     )
     t4 = time.time()
@@ -59,7 +60,7 @@ def task(n, seed):
         loss_fn=statistic_model.linear_loss_no_intercept,
         grad_fn=statistic_model.linear_grad_no_intercept,
         dim=500,
-        data=data,
+        data=statistic_model_pybind.RegressionData(data.x, data.y),
         support_size=50,
     )
     t5 = time.time()
@@ -68,6 +69,7 @@ def task(n, seed):
         dim=500,
         data=data,
         support_size=50,
+        init_lambda=1e4,
     )
     t6 = time.time()
 

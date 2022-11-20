@@ -7,15 +7,15 @@ import abess
 import numpy as np
 import time
 
-abess.set_log_level(console_log_level=6, file_log_level=6)
+abess.set_log_level(console_log_level=0, file_log_level=6)
 
 
 def task(n, seed):
     result = {}
     # make dataset
-    data, theta, coef = statistic_model.ising_generator(P=20, N=n, Edges=40, seed=seed)
-    dim = 190
-    support_size = 40
+    data, theta, coef = statistic_model.ising_generator(P=5, N=n, Edges=1, seed=seed)
+    dim = 10
+    support_size = 1
     # set model
     model = abess.ConvexSparseSolver(model_size=dim, sample_size=n, support_size=support_size)
     model.set_model_autodiff(
@@ -49,6 +49,13 @@ def task(n, seed):
         support_size=support_size,
     )
     t5 = time.time()
+    Lasso_coef, Lasso_best_lambda = variable_select_algorithm.Lasso(
+        loss_cvxpy=statistic_model.ising_loss_cvxpy_no_intercept,
+        dim=dim,
+        data=statistic_model.IsingData(data),
+        support_size=support_size,
+    )
+    t6 = time.time()
 
     # return
     result["SCOPE_accuracy"] = parallel_experiment_util.accuracy(SCOPE_coef, data.coef_)
@@ -64,7 +71,9 @@ def task(n, seed):
     result["GraHTP_cv_time"] = t4 - t3
     result["GraSP_accuracy"] = parallel_experiment_util.accuracy(GraSP_coef, data.coef_)
     result["GraSP_time"] = t5 - t4
-
+    result["Lasso_accuracy"] = parallel_experiment_util.accuracy(Lasso_coef, data.coef_)
+    result["Lasso_best_lambda"] = Lasso_best_lambda
+    result["Lasso_time"] = t6 - t5
     return result
 
 
@@ -80,6 +89,9 @@ if __name__ == "__main__":
         "GraHTP_cv_time",
         "GraSP_accuracy",
         "GraSP_time",
+        "Lasso_accuracy",
+        "Lasso_best_lambda",
+        "Lasso_time",
     ]
 
     experiment = parallel_experiment_util.ParallelExperiment(
@@ -87,14 +99,14 @@ if __name__ == "__main__":
         in_keys=in_keys,
         out_keys=out_keys,
         processes=40,
-        name="logistic_experiment",
+        name="ising_experiment",
     )
 
-    if False:
-        experiment.check(n=[i*100 +100 for i in range(20)][0], seed=1)
+    if True:
+        experiment.check(n=[i*50 + 50 for i in range(20)][0], seed=1)
     else:
         parameters = parallel_experiment_util.para_generator(
-            {"n": [i*100 +100 for i in range(20)]},
+            {"n": [i*50 + 50 for i in range(20)]},
             repeat=2,
             seed=100
         )

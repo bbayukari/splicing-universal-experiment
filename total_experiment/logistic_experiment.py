@@ -43,7 +43,7 @@ def task(n, seed):
         loss_fn=statistic_model.logistic_loss_no_intercept,
         grad_fn=statistic_model.logistic_grad_no_intercept,
         dim=500,
-        data=data,
+        data=statistic_model_pybind.RegressionData(data.x, data.y),
         support_size=50,
     )
     t3 = time.time()
@@ -51,7 +51,7 @@ def task(n, seed):
         loss_fn=statistic_model.logistic_loss_no_intercept,
         grad_fn=statistic_model.logistic_grad_no_intercept,
         dim=500,
-        data=data,
+        data=statistic_model_pybind.RegressionData(data.x, data.y),
         support_size=50,
     )
     t4 = time.time()
@@ -59,7 +59,7 @@ def task(n, seed):
         loss_fn=statistic_model.logistic_loss_no_intercept,
         grad_fn=statistic_model.logistic_grad_no_intercept,
         dim=500,
-        data=data,
+        data=statistic_model_pybind.RegressionData(data.x, data.y),
         support_size=50,
     )
     t5 = time.time()
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         name="logistic_experiment",
     )
 
-    if False:
+    if True:
         experiment.check(n=[i*100 +100 for i in range(20)][0], seed=1)
     else:
         parameters = parallel_experiment_util.para_generator(

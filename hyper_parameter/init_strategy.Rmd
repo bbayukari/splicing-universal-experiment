@@ -57,14 +57,14 @@ ggplot(df_p, aes(p, time, color = method)) +
 
 
 ```{r}
-ggplot(df_n, aes(n, accuracy, color = method)) +
+p1 = ggplot(df_n, aes(n, accuracy, color = method)) +
     labs(x='Sample size', y='Accuracy') +
     geom_line() +
     geom_point()
 ```
 
 ```{r}
-ggplot(df_n, aes(n, time, color = method)) +
+p2 = ggplot(df_n, aes(n, time, color = method)) +
     labs(x='Sample size', y='Runtime (Sec)') +
     geom_line() +
     geom_point()
