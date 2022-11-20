@@ -3,11 +3,6 @@ import pandas as pd
 import multiprocessing as mp
 import numpy as np
 
-def task_parallel(func, in_para):
-    result = func(**in_para)
-    in_para.update(result)
-    print(in_para, flush=True)
-    return in_para
 
 def product_dict(**kwargs):
     """
@@ -81,6 +76,16 @@ class Test:
         self.results = []  # 'results' is a list of dict
         self.processes = processes
 
+    def task_parallel(self, in_para):
+        try:
+            result = self.task(**in_para)
+        except Exception as e:
+            print(e)
+            result = {para: np.nan for para in self.out_keys}
+        in_para.update(result)
+        print(in_para, flush=True)
+        return in_para
+
     def check(self, **in_para):
         if set(in_para.keys()) != set(self.in_keys):
             raise RuntimeError("in_parameter's keys do not match!\n{}\n{}".format(self.in_keys, set(in_para.keys())))
@@ -101,7 +106,7 @@ class Test:
         with mp.Pool(processes=self.processes) as pool:
             self.results.extend(
                 pool.starmap(
-                    task_parallel, [(self.task, para) for para in in_para_list]
+                    self.task_parallel, [(para,) for para in in_para_list]
                 ),
             )
 
@@ -121,12 +126,14 @@ class Test:
 if __name__ == "__main__":
     #mp.set_start_method('spawn')
     import time
-    in_keys= ['n','p']
-    out_keys= ['seed', 'time']
-    def f(n,p):
+    in_keys= ['n','p','k']
+    out_keys= ['seed', 'time', 'ac']
+    def f(n,p,k):
         time.sleep(1.0)
-        return {'seed': n+100, 'time': p+100}
+        if n==3:
+            raise RuntimeError('error')
+        return {'seed': n+100, 'time': p+100, 'ac': k/(k+1)}
     test = Test(f,in_keys,out_keys, processes=10)
-    test.check(n=1,p=3)
-    test.run(n=[11,2,3],p=[5,6])
+    test.check(n=1,p=3,k=2)
+    test.run(n=[11,2,3],p=[5,6],k=[7,8])
     test.save()

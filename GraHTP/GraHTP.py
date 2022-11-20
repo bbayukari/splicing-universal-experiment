@@ -1,4 +1,4 @@
-from smtplib import quoteaddr
+import cvxpy as cp
 import numpy as np
 import nlopt
 
@@ -54,6 +54,10 @@ def GraHTP(
             x_new[support_new] = x_bias[support_new]
         else:
             try:
+                def object_fn(x):
+                    x_full = np.zeros(dim)
+                    x_full[support_new] = x
+                """
                 def opt_f(x, gradient):
                     x_full = np.zeros(dim)
                     x_full[support_new] = x
@@ -66,6 +70,7 @@ def GraHTP(
                 opt.set_ftol_rel(0.001)
                 x_new = np.zeros(dim)
                 x_new[support_new] = opt.optimize(x_bias[support_new])
+                """
             except RuntimeError:
                 raise
         # terminating condition

@@ -133,8 +133,8 @@ def hessian_logistic(beta, data, active_index=None, compute_index=None):
         data.x[:, compute_index].T,
         np.array([1 / (exp(x) + exp(-x) + 2) if abs(x) < 100 else 0.0 for x in Xbeta])[
             :, np.newaxis
-        ]
-        * data.x[:, compute_index],
+        ] # changed to column vector
+        * data.x[:, compute_index], # this is a array multiplication
     )
 
 
