@@ -117,9 +117,14 @@ if __name__ == "__main__":
         name="logistic_experiment",
     )
 
-    #experiment.check(n=1000, seed=1)
+    if False:
+        experiment.check(n=1000, seed=1)
+    else:
+        parameters = parallel_experiment_util.para_generator(
+            {"n": np.arange(20)*100+100},
+            repeat=2,
+            seed=100
+        )
 
-    parameters = parallel_experiment_util.para_generator(
-        {"n": np.arange(20)*100+100},
-        repeat=2
-    )
+        experiment.run(parameters)
+        experiment.save()
