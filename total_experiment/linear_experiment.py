@@ -118,10 +118,10 @@ if __name__ == "__main__":
     )
 
     if False:
-        experiment.check(n=1000, seed=1)
+        experiment.check(n=[i*100 +100 for i in range(20)][0], seed=1)
     else:
         parameters = parallel_experiment_util.para_generator(
-            {"n": np.arange(20)*100+100},
+            {"n": [i*100 +100 for i in range(20)]},
             repeat=2,
             seed=100
         )
