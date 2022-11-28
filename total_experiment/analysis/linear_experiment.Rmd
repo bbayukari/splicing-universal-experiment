@@ -6,7 +6,7 @@ date: '2022-08-31'
 
 ```{r}
 library(tidyverse)
-df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/linear_experiment.csv') %>% 
+df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/experiment/linear_experiment.csv') %>% 
   select(-...1)
 ```
 
@@ -29,6 +29,12 @@ df2 = bind_rows(
     mutate(method = 'Lasso')
 )
 ```
+```{r}
+df %>% 
+  filter(!is.na(SCOPE_accuracy)) %>% 
+  group_by(n) %>% 
+  count()
+```
 
 
 ```{r}
@@ -43,15 +49,25 @@ df %>% ggplot() +
 
 ```{r}
 df2 %>% 
+  group_by(n,method) %>% 
+  summarise(accuracy = mean(accuracy)) %>% 
   ggplot(aes(n, accuracy, color = method)) +
     labs(x='Sample size', y='Accuracy') +
-    geom_point()
+    geom_point() +
+    geom_line() + 
+    ylim(0,1)
 ```
 
 ```{r}
 df2 %>% 
-  filter(!method%in%c("GraHTP_cv","GraHTP", "Lasso")) %>% 
+  group_by(n,method) %>% 
+  summarise(time = mean(time)) %>% 
+  #filter(method == "GraSP") %>% 
+  #filter(!method%in%c("GraHTP_cv")) %>% 
   ggplot(aes(n, time, color = method)) +
-    labs(x='Sample size', y='Accuracy') +
-    geom_point()
+    labs(x='Sample size', y='Runtime (Sec)') +
+    geom_line() +
+    #scale_y_log10() +
+    geom_point() 
+  
 ```
