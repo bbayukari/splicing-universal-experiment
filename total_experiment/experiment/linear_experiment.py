@@ -121,17 +121,18 @@ if __name__ == "__main__":
         task=task,
         in_keys=in_keys,
         out_keys=out_keys,
-        processes=40,
-        name="linear_experiment",
+        processes=5,
+        name="linear_supplement",
+        memory_limit=80,
     )
 
     if False:
         experiment.check(n=[i*100 +100 for i in range(20)][0], seed=1)
     else:
         parameters = parallel_experiment_util.para_generator(
-            {"n": [i*50 + 50 for i in range(20)]},
-            repeat=100,
-            seed=10000
+            {"n": [50]},
+            repeat=20,
+            seed=1
         )
             
         experiment.run(parameters)

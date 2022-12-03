@@ -120,18 +120,19 @@ if __name__ == "__main__":
         task=task,
         in_keys=in_keys,
         out_keys=out_keys,
-        processes=20,
+        processes=5,
         name="logistic_experiment",
+        memory_limit=80
     )
 
     if False:
         experiment.check(n=[i*100 +100 for i in range(20)][0], seed=1)
     else:
-        parameters2 = parallel_experiment_util.para_generator(
-            {"n": [1600,1700,1800,1900,2000]},
-            repeat=100,
-            seed=50000
+        parameters = parallel_experiment_util.para_generator(
+            {"n": np.arange(50, 1050, 50)},
+            repeat=120,
+            seed=1
         )
 
-        experiment.run(parameters2)
+        experiment.run(parameters)
         experiment.save()

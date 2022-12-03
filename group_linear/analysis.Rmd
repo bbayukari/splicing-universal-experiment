@@ -14,16 +14,16 @@ df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/group_line
 df2 = bind_rows(
   df %>% 
     select(p,k,sigma,time=autodiff_time,accuracy=autodiff_accuracy) %>% 
-    mutate(method = 'abess'),
+    mutate(method = 'SCOPE'),
   df %>% 
     select(p,k,sigma,time=lasso_time,accuracy=lasso_accuracy) %>% 
-    mutate(method = 'LASSO_cv'),
+    mutate(method = 'LASSO2'),
   #df %>% 
   #  select(p,k,sigma,time=lasso_time,accuracy=lasso_1_accuracy) %>% 
   #  mutate(method = 'LASSO_1'),
   df %>% 
     select(p,k,sigma,time=lasso_time,accuracy=lasso_10_accuracy) %>% 
-    mutate(method = 'LASSO_10')
+    mutate(method = 'LASSO1')
 ) 
 ```
 

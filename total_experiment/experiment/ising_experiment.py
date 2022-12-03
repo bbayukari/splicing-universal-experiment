@@ -35,7 +35,7 @@ def task(n, k, seed):
         dim=dim,
         data=statistic_model.IsingData(data),
         support_size=support_size,
-        tol=0.005,
+        tol=0.05,
         init_lambda=200
     )
     t2 = time.time()
@@ -108,18 +108,19 @@ if __name__ == "__main__":
         task=task,
         in_keys=in_keys,
         out_keys=out_keys,
-        processes=5,
-        name="ising_experiment",
+        processes=3,
+        name="ising_supplement",
+        memory_limit=80
     )
 
     if False:
-        experiment.check(n=1000, k=20, seed=1)
+        experiment.check(n=1000, k=40, seed=1)
     else:
         parameters = parallel_experiment_util.para_generator(
-            {"n": [i * 50 + 50 for i in range(20)], "k": [40]},
-            repeat=20,
-            seed=111,
+            {"n": [800], "k": [40]},
+            repeat=10,
+            seed=31000,
         )
-
+        
         experiment.run(parameters)
         experiment.save()
