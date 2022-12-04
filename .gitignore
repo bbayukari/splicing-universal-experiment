@@ -2,7 +2,7 @@
 .vscode/
 .Rhistory
 logs/
-nohup.out
+*.out
 tem*
 */__pycache__/
 util/

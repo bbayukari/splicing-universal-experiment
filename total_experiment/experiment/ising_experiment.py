@@ -7,9 +7,6 @@ import abess
 import numpy as np
 import time
 
-abess.set_log_level(console_log_level=6, file_log_level=6)
-
-
 def task(n, k, seed):
     result = {}
     # make dataset
@@ -21,12 +18,11 @@ def task(n, k, seed):
     model = abess.ConvexSparseSolver(
         model_size=dim, sample_size=n, support_size=support_size
     )
-    model.set_model_user_defined(
+    model.set_loss_custom(
         loss = statistic_model_pybind.ising_loss,
         gradient = statistic_model_pybind.ising_grad,
         hessian = statistic_model_pybind.ising_hess_diag
     )
-    model.set_data(dataset)
 
     # run model
     t1 = time.time()
@@ -64,8 +60,8 @@ def task(n, k, seed):
         support_size=support_size,
     )
     t5 = time.time()
-    model.fit()
-    SCOPE_coef = model.coef_
+    model.fit(dataset)
+    SCOPE_coef = model.get_solution()
     t6 = time.time()
 
 

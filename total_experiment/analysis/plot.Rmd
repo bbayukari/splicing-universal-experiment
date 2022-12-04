@@ -1,0 +1,99 @@
+```{r}
+library(tidyverse)
+linear = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/linear_experiment.csv') %>% select(-...1) %>% filter(!is.na(Lasso_accuracy))
+
+r = readLines("/data/home/wangzz/github/splicing-universal-experiment/total_experiment/experiment/logistic.out")
+r = r[str_starts(r,'\\{')]
+logistic = r %>% 
+  str_extract_all("(-?[0-9]\\d*\\.?\\d*e?-?\\d*)|nan") %>% 
+  sapply(as.matrix) %>% 
+  t() %>% 
+  as_tibble()
+colnames(logistic) = c('n', 'seed', 'Lasso_accuracy', 'Lasso_best_lambda', 'Lasso_time', 'GraHTP_accuracy', 'GraHTP_time', 'GraHTP_cv_accuracy', 'GraHTP_best_step_size', 'GraHTP_cv_time', 'GraSP_accuracy', 'GraSP_time', 'SCOPE_accuracy', 'SCOPE_time')
+logistic = logistic %>% 
+  mutate(across(everything(), as.numeric)) %>%
+  filter(!is.na(Lasso_accuracy)) %>% 
+  filter(n%%100==0)
+
+r = readLines("/data/home/wangzz/github/splicing-universal-experiment/total_experiment/experiment/ising.out")
+r = r[str_starts(r,'\\{')]
+ising = r %>% 
+  str_extract_all("(-?[0-9]\\d*\\.?\\d*e?-?\\d*)|nan") %>% 
+  sapply(as.matrix) %>% 
+  t() %>% 
+  as_tibble()
+colnames(ising) = c('n', 'k', 'seed', 'Lasso_accuracy', 'Lasso_best_lambda', 'Lasso_time', 'GraHTP_accuracy', 'GraHTP_time', 'GraHTP_cv_accuracy', 'GraHTP_best_step_size', 'GraHTP_cv_time', 'GraSP_accuracy', 'GraSP_time', 'SCOPE_accuracy', 'SCOPE_time')
+ising = ising %>% 
+  mutate(across(everything(), as.numeric)) %>%
+  filter(!is.na(Lasso_accuracy), k==40)
+```
+```{r}
+ising %>% group_by(n) %>% count()
+```
+```{r}
+write_csv(ising, "ising_tidy.csv")
+```
+
+
+```{r}
+ising_tidy = read_csv("ising_tidy.csv")
+```
+
+
+```{r}
+transform <- function(df, model){
+  bind_rows(
+  df %>% 
+    select(n,time=SCOPE_time,accuracy=SCOPE_accuracy) %>% 
+    mutate(method = 'SCOPE'),
+  df %>% 
+    select(n,time=GraHTP_time,accuracy=GraHTP_accuracy) %>% 
+    mutate(method = 'GraHTP1'),
+  df %>% 
+    select(n,time=GraHTP_cv_time,accuracy=GraHTP_cv_accuracy) %>% 
+    mutate(method = 'GraHTP2'),
+  df %>% 
+    select(n,time=GraSP_time,accuracy=GraSP_accuracy) %>% 
+    mutate(method = 'GraSP'),
+  df %>% 
+    select(n,time=Lasso_time,accuracy=Lasso_accuracy) %>% 
+    mutate(method = 'Lasso')
+  ) %>% 
+    mutate(model = model)
+}
+
+df = bind_rows(transform(linear, "Linear"),
+               transform(logistic, "Classification"),
+               transform(ising, "Ising"))
+```
+
+```{r}
+df = df %>% filter(n < 1001) %>% 
+  mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising"))) %>% 
+  group_by(n,method, model) %>% 
+  summarise(accuracy = mean(accuracy), time = mean(time)) 
+```
+```{r}
+p = df %>%
+  ggplot(aes(n, accuracy, color = method, shape = method)) +
+    labs(x='n', y='Accuracy') +
+    geom_point() +
+    geom_line() + 
+    ylim(0,1) +
+    facet_grid(model ~ .)
+q = df %>% 
+  ggplot(aes(n, time, color = method, shape = method)) +
+    labs(x='n', y='Runtime (Sec)') +
+    geom_line() +
+    scale_y_log10() +
+    geom_point() +
+    facet_grid(model ~ .)
+```
+
+```{r}
+library(ggpubr)
+
+page = ggarrange(p,q,nrow=1,ncol=2,legend = 'bottom', common.legend = TRUE)
+
+ggexport(page, filename = 'SOTA.pdf', width = 10)
+```
