@@ -13,25 +13,25 @@ df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/hyper_para
 ```{r}
 df2 = bind_rows(
   df %>% 
-    select(n,p,time=time_2,accuracy=accuracy_2) %>% 
+    select(n,model,time=time_2,accuracy=accuracy_2) %>% 
     mutate(max_exchange_num = '2'),
   df %>% 
-    select(n,p,time=time_5,accuracy=accuracy_5) %>% 
+    select(n,model,time=time_5,accuracy=accuracy_5) %>% 
     mutate(max_exchange_num = '5'),  
   df %>% 
-    select(n,p,time=time_10,accuracy=accuracy_10) %>% 
+    select(n,model,time=time_10,accuracy=accuracy_10) %>% 
     mutate(max_exchange_num = '10'),
   df %>% 
-    select(n,p,time=time_20,accuracy=accuracy_20) %>% 
+    select(n,model,time=time_20,accuracy=accuracy_20) %>% 
     mutate(max_exchange_num = '20'),
   df %>% 
-    select(n,p,time=time_30,accuracy=accuracy_30) %>% 
+    select(n,model,time=time_30,accuracy=accuracy_30) %>% 
     mutate(max_exchange_num = '30'),
   df %>% 
-    select(n,p,time=time_40,accuracy=accuracy_40) %>% 
+    select(n,model,time=time_40,accuracy=accuracy_40) %>% 
     mutate(max_exchange_num = '40'),
   df %>% 
-    select(n,p,time=time_50,accuracy=accuracy_50) %>% 
+    select(n,model,time=time_50,accuracy=accuracy_50) %>% 
     mutate(max_exchange_num = '50')
 )
 ```
@@ -40,30 +40,64 @@ df2 = bind_rows(
 ```{r}
 df2$max_exchange_num = factor(df2$max_exchange_num,
   levels = c("2", "5", "10", "20", "30", "40", "50"))
+
+df2$model = factor(df2$model, levels = c("gaussian", "binomial", "ising"))
+levels(df2$model) = c("Linear", "Classification", "Ising")
+
+df2 = df2 %>% 
+  filter(!is.na(time))
 ```
 
 
+## count
+
 ```{r}
-df_n = 
-  df2 %>% 
-  filter(p==500, n<=800) %>% 
-  group_by(n,k_max=max_exchange_num) %>% 
-  summarise(accuracy = mean(accuracy), time = mean(time))
+df2 %>% 
+  group_by(n, model, max_exchange_num) %>% 
+  count()
 ```
 
 ## plot
 
+```{r}
+random_mean <- function(v){
+  mean(sample(v, length(v)/5))
+}
+```
+
 
 ```{r}
-p1 = ggplot(df_n, aes(n, accuracy, color = k_max)) +
-    labs(x='Sample size', y='Accuracy') +
+data = df2 %>% 
+  filter(!max_exchange_num %in% c("20", "40")) %>% 
+  group_by(n, model, max_exchange_num) %>% 
+  summarise(time=mean(time), accuracy=mean(accuracy))
+```
+
+
+
+```{r}
+p1 = 
+ggplot(data, aes(n, accuracy, color = max_exchange_num, shape = max_exchange_num)) +
+    labs(x='n', y='Accuracy') +
     geom_line() +
-    geom_point()
+    geom_point() +
+    ylim(0,1) +
+    facet_grid(model ~ .)
 ```
 
 ```{r}
-p2 = ggplot(df_n, aes(n, time, color = k_max)) +
-    labs(x='Sample size', y='Runtime (Sec)') +
+p2 = 
+ggplot(data, aes(n, time, color = max_exchange_num, shape = max_exchange_num)) +
+    labs(x='n', y='Runtime (Sec)') +
     geom_line() +
-    geom_point()
+    geom_point() +
+    facet_grid(model ~ .)
+```
+
+```{r}
+library(ggpubr)
+
+page = ggarrange(p1,p2,nrow=1,ncol=2,legend = 'bottom', common.legend = TRUE)
+
+ggexport(page, filename = 'k_max.pdf', width = 10)
 ```

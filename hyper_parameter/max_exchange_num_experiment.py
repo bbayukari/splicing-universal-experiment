@@ -2,7 +2,6 @@ import numpy as np
 import time
 import statistic_model
 import statistic_model_pybind
-import variable_select_algorithm
 import parallel_experiment_util
 
 from abess import make_glm_data, ConvexSparseSolver
@@ -93,7 +92,7 @@ if __name__ == "__main__":
         memory_limit=40
     )
 
-    if True:
+    if False:
         experiment.check(n=1000, model="gaussian", seed=1)
         experiment.check(n=500, model="binomial", seed=10)
         experiment.check(n=100, model="ising", seed=100)
