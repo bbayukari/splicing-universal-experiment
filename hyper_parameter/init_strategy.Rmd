@@ -13,61 +13,76 @@ df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/hyper_para
 ```{r}
 df2 = bind_rows(
   df %>% 
-    select(n,p,time=margin_time,accuracy=margin_accuracy) %>% 
-    mutate(method = 'margin'),
+    select(n, model,time=margin_time,accuracy=margin_accuracy) %>% 
+    mutate(method = 'Margin'),
   df %>% 
-    select(n,p,time=sacrifice_time,accuracy=sacrifice_accuracy) %>% 
-    mutate(method = 'sacrifice'),
+    select(n, model,time=sacrifice_time,accuracy=sacrifice_accuracy) %>% 
+    mutate(method = 'Sacrifice'),
   df %>% 
-    select(n,p,time=random_time,accuracy=random_accuracy) %>% 
-    mutate(method = 'random')
+    select(n, model,time=random_time,accuracy=random_accuracy) %>% 
+    mutate(method = 'Random')
 ) 
 ```
 
+```{r}
+
+df2 = df2 %>% 
+  filter(!is.na(time))
+
+df2$model = factor(df2$model, levels = c("Linear", "Classification", "Ising"))
+
+df2 %>% 
+  group_by(n, model, method) %>% 
+  count()
+```
+
+
 
 ```{r}
-df_p = 
-  df2 %>% 
-  filter(n==500) %>% 
-  group_by(p,method) %>% 
-  summarise(accuracy = mean(accuracy), time = mean(time)) 
-
-df_n = 
-  df2 %>% 
-  filter(p==500) %>% 
-  group_by(n,method) %>% 
+df_n = df2 %>% 
+  group_by(n,model,method) %>% 
   summarise(accuracy = mean(accuracy), time = mean(time))
 ```
 
 ## plot
 
 ```{r}
-ggplot(df_p, aes(p, accuracy, color = method)) +
-    labs(x='Dimension', y='Accuracy') +
+#p1 = 
+df_n %>% 
+  filter(method!="Sacrifice") %>% 
+ggplot( aes(n, accuracy, color = method, shape = method)) +
+    labs(x='n', y='Accuracy') +
     geom_line() +
-    geom_point()
+    geom_point() +
+    ylim(0,1) +
+    labs(color='Initialization strategy', shape = "Initialization strategy")  +
+    facet_grid(model ~ .)
+
+
+ggplot(df_n, aes(n, accuracy, color = method, shape = method)) +
+    labs(x='n', y='Accuracy') +
+    geom_line() +
+    geom_point() +
+    ylim(0,1) +
+    labs(color='Initialization strategy', shape = "Initialization strategy")  +
+    facet_grid(model ~ .)
 ```
 
 ```{r}
-ggplot(df_p, aes(p, time, color = method)) +
-    labs(x='Dimension', y='Runtime (Sec)') +
+#p2 = 
+ggplot(df_n, aes(n, time, color = method, shape = method)) +
+    labs(x='n', y='Runtime (Sec)') +
     geom_line() +
-    geom_point()
-```
-
-
-```{r}
-p1 = ggplot(df_n, aes(n, accuracy, color = method)) +
-    labs(x='Sample size', y='Accuracy') +
-    geom_line() +
-    geom_point()
+    geom_point() +
+    labs(color='Initialization strategy', shape = "Initialization strategy")  +
+    facet_grid(model ~ .)
 ```
 
 ```{r}
-p2 = ggplot(df_n, aes(n, time, color = method)) +
-    labs(x='Sample size', y='Runtime (Sec)') +
-    geom_line() +
-    geom_point()
-```
+library(ggpubr)
 
+page = ggarrange(p1,p2,nrow=1,ncol=2,legend = 'bottom', common.legend = TRUE)
+
+ggexport(page, filename = 'init.pdf', width = 10)
+```
 

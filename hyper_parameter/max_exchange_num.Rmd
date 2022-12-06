@@ -81,7 +81,8 @@ ggplot(data, aes(n, accuracy, color = max_exchange_num, shape = max_exchange_num
     labs(x='n', y='Accuracy') +
     geom_line() +
     geom_point() +
-    ylim(0,1) +
+    ylim(0,1) + 
+    labs(color='Maximum splicing size', shape = "Maximum splicing size")  +  
     facet_grid(model ~ .)
 ```
 
@@ -91,7 +92,12 @@ ggplot(data, aes(n, time, color = max_exchange_num, shape = max_exchange_num)) +
     labs(x='n', y='Runtime (Sec)') +
     geom_line() +
     geom_point() +
+    labs(color='Maximum splicing size', shape = "Maximum splicing size")  +  
     facet_grid(model ~ .)
+```
+```{r}
+p1
+p2
 ```
 
 ```{r}
