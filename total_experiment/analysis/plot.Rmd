@@ -2,41 +2,18 @@
 library(tidyverse)
 linear = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/linear_experiment.csv') %>% select(-...1) %>% filter(!is.na(Lasso_accuracy))
 
-r = readLines("/data/home/wangzz/github/splicing-universal-experiment/total_experiment/experiment/logistic.out")
-r = r[str_starts(r,'\\{')]
-logistic = r %>% 
-  str_extract_all("(-?[0-9]\\d*\\.?\\d*e?-?\\d*)|nan") %>% 
-  sapply(as.matrix) %>% 
-  t() %>% 
-  as_tibble()
-colnames(logistic) = c('n', 'seed', 'Lasso_accuracy', 'Lasso_best_lambda', 'Lasso_time', 'GraHTP_accuracy', 'GraHTP_time', 'GraHTP_cv_accuracy', 'GraHTP_best_step_size', 'GraHTP_cv_time', 'GraSP_accuracy', 'GraSP_time', 'SCOPE_accuracy', 'SCOPE_time')
-logistic = logistic %>% 
-  mutate(across(everything(), as.numeric)) %>%
-  filter(!is.na(Lasso_accuracy)) %>% 
-  filter(n%%100==0)
+logistic = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/logistic_experiment.csv') %>% 
+  filter(!is.na(Lasso_accuracy))
 
-r = readLines("/data/home/wangzz/github/splicing-universal-experiment/total_experiment/experiment/ising.out")
-r = r[str_starts(r,'\\{')]
-ising = r %>% 
-  str_extract_all("(-?[0-9]\\d*\\.?\\d*e?-?\\d*)|nan") %>% 
-  sapply(as.matrix) %>% 
-  t() %>% 
-  as_tibble()
-colnames(ising) = c('n', 'k', 'seed', 'Lasso_accuracy', 'Lasso_best_lambda', 'Lasso_time', 'GraHTP_accuracy', 'GraHTP_time', 'GraHTP_cv_accuracy', 'GraHTP_best_step_size', 'GraHTP_cv_time', 'GraSP_accuracy', 'GraSP_time', 'SCOPE_accuracy', 'SCOPE_time')
-ising = ising %>% 
-  mutate(across(everything(), as.numeric)) %>%
+
+ising = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/ising_experiment.csv')  %>% 
   filter(!is.na(Lasso_accuracy), k==40)
 ```
-```{r}
-ising %>% group_by(n) %>% count()
-```
-```{r}
-write_csv(ising, "ising_tidy.csv")
-```
+
 
 
 ```{r}
-ising_tidy = read_csv("ising_tidy.csv")
+logistic %>% group_by(n) %>% count()
 ```
 
 
@@ -74,20 +51,23 @@ df = df %>% filter(n < 1001) %>%
   summarise(accuracy = mean(accuracy), time = mean(time)) 
 ```
 ```{r}
-p = df %>%
+p = 
+df %>%
   ggplot(aes(n, accuracy, color = method, shape = method)) +
     labs(x='n', y='Accuracy') +
     geom_point() +
     geom_line() + 
-    ylim(0,1) +
-    facet_grid(model ~ .)
+    #ylim(0,1) +
+    facet_grid(model ~ ., scale = "free")
+
+
 q = df %>% 
   ggplot(aes(n, time, color = method, shape = method)) +
     labs(x='n', y='Runtime (Sec)') +
     geom_line() +
     scale_y_log10() +
     geom_point() +
-    facet_grid(model ~ .)
+    facet_grid(model ~ ., scale = "free")
 ```
 
 ```{r}

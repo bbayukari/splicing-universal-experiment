@@ -40,6 +40,7 @@ df2 %>%
 
 ```{r}
 df_n = df2 %>% 
+  filter(method!="Margin") %>% 
   group_by(n,model,method) %>% 
   summarise(accuracy = mean(accuracy), time = mean(time))
 ```
@@ -47,35 +48,24 @@ df_n = df2 %>%
 ## plot
 
 ```{r}
-#p1 = 
-df_n %>% 
-  filter(method!="Sacrifice") %>% 
-ggplot( aes(n, accuracy, color = method, shape = method)) +
-    labs(x='n', y='Accuracy') +
-    geom_line() +
-    geom_point() +
-    ylim(0,1) +
-    labs(color='Initialization strategy', shape = "Initialization strategy")  +
-    facet_grid(model ~ .)
-
-
+p1 = 
 ggplot(df_n, aes(n, accuracy, color = method, shape = method)) +
     labs(x='n', y='Accuracy') +
     geom_line() +
     geom_point() +
-    ylim(0,1) +
+    #ylim(0,1) +
     labs(color='Initialization strategy', shape = "Initialization strategy")  +
-    facet_grid(model ~ .)
+    facet_grid(model ~ ., scale = "free")
 ```
 
 ```{r}
-#p2 = 
+p2 = 
 ggplot(df_n, aes(n, time, color = method, shape = method)) +
     labs(x='n', y='Runtime (Sec)') +
     geom_line() +
     geom_point() +
     labs(color='Initialization strategy', shape = "Initialization strategy")  +
-    facet_grid(model ~ .)
+    facet_grid(model ~ ., scale = "free")
 ```
 
 ```{r}

@@ -127,9 +127,12 @@ if __name__ == "__main__":
         experiment.check(n=200, seed=1)
     else:
         parameters = parallel_experiment_util.para_generator(
-            {"n": np.arange(50, 1050, 50)},
-            repeat=120,
-            seed=1
+            {"n": [200]},
+            {"n": [250]},
+            {"n": [300]},
+            {"n": [350]},
+            repeat=[15, 80, 25, 80],
+            seed=10000
         )
 
         experiment.run(parameters)
