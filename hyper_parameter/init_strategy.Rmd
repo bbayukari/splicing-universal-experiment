@@ -13,9 +13,6 @@ df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/hyper_para
 ```{r}
 df2 = bind_rows(
   df %>% 
-    select(n, model,time=margin_time,accuracy=margin_accuracy) %>% 
-    mutate(method = 'Margin'),
-  df %>% 
     select(n, model,time=sacrifice_time,accuracy=sacrifice_accuracy) %>% 
     mutate(method = 'Sacrifice'),
   df %>% 
@@ -48,8 +45,10 @@ df_n = df2 %>%
 ## plot
 
 ```{r}
-p1 = 
-ggplot(df_n, aes(n, accuracy, color = method, shape = method)) +
+#p1 = 
+df_n %>% 
+  filter(n<=3000) %>% 
+ggplot(aes(n, accuracy, color = method, shape = method)) +
     labs(x='n', y='Accuracy') +
     geom_line() +
     geom_point() +
@@ -59,7 +58,7 @@ ggplot(df_n, aes(n, accuracy, color = method, shape = method)) +
 ```
 
 ```{r}
-p2 = 
+#p2 = 
 ggplot(df_n, aes(n, time, color = method, shape = method)) +
     labs(x='n', y='Runtime (Sec)') +
     geom_line() +

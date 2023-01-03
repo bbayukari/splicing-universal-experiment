@@ -6,15 +6,13 @@ import parallel_experiment_util
 
 from abess import make_glm_data, ConvexSparseSolver
 
-max_exchange_num_list = [2, 5, 10, 20, 30, 40, 50]
-
 
 def task(n, seed, model):
     result = {}
     # make dataset
     if model == "Ising":
         p = 190
-        k = 40
+        k = 20
         data, theta, coef = statistic_model.ising_generator(P=20, N=n, Edges=k, seed=seed)
         data_set = statistic_model_pybind.IsingData(data)
     else:
@@ -65,31 +63,25 @@ def task(n, seed, model):
     # run model
     t1 = time.time()
     solver.fit(data_set)
-    margin_coef = solver.coef_
+    sacrifice_coef = solver.coef_
     t2 = time.time()
     solver.init_active_set = np.arange(p)
     solver.fit(data_set)
     random_coef = solver.coef_
     t3 = time.time()
-    solver.init_active_set = [0]
-    solver.fit(data_set)
-    sacrifice_coef = solver.coef_
-    t4 = time.time()
 
     # return
-    result["margin_accuracy"] = parallel_experiment_util.accuracy(margin_coef, coef)
-    result["margin_time"] = t2 - t1
     result["random_accuracy"] = parallel_experiment_util.accuracy(random_coef, coef)
     result["random_time"] = t3 - t2
     result["sacrifice_accuracy"] = parallel_experiment_util.accuracy(sacrifice_coef, coef)
-    result["sacrifice_time"] = t4 - t3
+    result["sacrifice_time"] = t2 - t1
     return result
 
 
 if __name__ == "__main__":
     in_keys = ["n", "seed", "model"]
     out_keys = [
-        "margin_accuracy", "margin_time", "random_accuracy", "random_time", "sacrifice_accuracy", "sacrifice_time"
+        "random_accuracy", "random_time", "sacrifice_accuracy", "sacrifice_time"
     ]
 
     experiment = parallel_experiment_util.ParallelExperiment(
@@ -97,7 +89,7 @@ if __name__ == "__main__":
         in_keys=in_keys,
         out_keys=out_keys,
         processes=40,
-        name="init_strategy",
+        name="init_strategy_2",
         memory_limit=80
     )
 
@@ -107,7 +99,7 @@ if __name__ == "__main__":
         experiment.check(n=100, model="Ising", seed=100)
     else:
         parameters = parallel_experiment_util.para_generator(
-            {"n": [i * 100 + 100 for i in range(10)], "model": ["Linear", "Classification", "Ising"]},
+            {"n": [i * 200 + 200 for i in range(10)], "model": ["Linear", "Classification", "Ising"]},
             repeat=100,
             seed=1,
         )
