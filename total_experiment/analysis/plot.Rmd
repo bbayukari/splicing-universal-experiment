@@ -10,6 +10,54 @@ ising = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_e
   filter(!is.na(Lasso_accuracy), k==40)
 ```
 
+```{r}
+linear_supplement = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/linear_supplement.csv') %>% select(-...1) %>% filter(!is.na(GraHTP_accuracy))
+
+linear_new = left_join(linear, linear_supplement, by = c('n', 'seed')) 
+linear_new <- linear_new %>% rename("GraHTP_time" = "GraHTP_time.y",
+                                    "GraHTP_accuracy" = "GraHTP_accuracy.y",
+                                    "GraHTP_cv_time" = "GraHTP_cv_time.y",
+                                    "GraHTP_cv_accuracy" = "GraHTP_cv_accuracy.y",
+                                    "GraSP_time" = "GraSP_time.y",
+                                    "GraSP_accuracy" = "GraSP_accuracy.y",)
+```
+
+```{r}
+logistic_supplement = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/logistic_supplement.csv') %>% select(-...1) %>% filter(!is.na(GraHTP_accuracy))
+
+logistic_new = left_join(logistic, logistic_supplement, by = c('n', 'seed')) 
+logistic_new <- logistic_new %>% rename("GraHTP_time" = "GraHTP_time.y",
+                                    "GraHTP_accuracy" = "GraHTP_accuracy.y",
+                                    "GraHTP_cv_time" = "GraHTP_cv_time.y",
+                                    "GraHTP_cv_accuracy" = "GraHTP_cv_accuracy.y",
+                                    "GraSP_time" = "GraSP_time.y",
+                                    "GraSP_accuracy" = "GraSP_accuracy.y",)
+```
+```{r}
+ising_supplement = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/ising_supplement.csv') %>% select(-...1) %>% filter(!is.na(GraHTP_accuracy))
+
+ising_new = left_join(ising, ising_supplement, by = c('n', 'seed')) 
+ising_new <- ising_new %>% rename("GraHTP_time" = "GraHTP_time.y",
+                                    "GraHTP_accuracy" = "GraHTP_accuracy.y",
+                                    "GraHTP_cv_time" = "GraHTP_cv_time.y",
+                                    "GraHTP_cv_accuracy" = "GraHTP_cv_accuracy.y",
+                                    "GraSP_time" = "GraSP_time.y",
+                                    "GraSP_accuracy" = "GraSP_accuracy.y",)
+```
+
+
+```{r}
+mean(abs(linear_new$GraHTP_accuracy.x - linear_new$GraHTP_accuracy))
+mean(abs(linear_new$GraHTP_cv_accuracy.x - linear_new$GraHTP_cv_accuracy))
+mean(abs(linear_new$GraSP_accuracy.x - linear_new$GraSP_accuracy))
+mean(abs(logistic_new$GraHTP_accuracy.x - logistic_new$GraHTP_accuracy))
+mean(abs(logistic_new$GraHTP_cv_accuracy.x - logistic_new$GraHTP_cv_accuracy))
+mean(abs(logistic_new$GraSP_accuracy.x - logistic_new$GraSP_accuracy))
+mean(abs(ising_new$GraHTP_accuracy.x - ising_new$GraHTP_accuracy))
+mean(abs(ising_new$GraHTP_cv_accuracy.x - ising_new$GraHTP_cv_accuracy))
+mean(abs(ising_new$GraSP_accuracy.x - ising_new$GraSP_accuracy))
+```
+
 
 
 ```{r}
@@ -39,29 +87,37 @@ transform <- function(df, model){
     mutate(model = model)
 }
 
-df = bind_rows(transform(linear, "Linear"),
-               transform(logistic, "Classification"),
-               transform(ising, "Ising"))
+df = bind_rows(transform(linear_new, "Linear"),
+               transform(logistic_new, "Classification"),
+               transform(ising_new, "Ising"))
 ```
 
 ```{r}
 df = df %>% filter(n < 1001) %>% 
-  mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising"))) %>% 
+  mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising"))) %>%
+  mutate(method = factor(x = method, levels = c('Lasso', 'GraHTP1', 'GraHTP2', 'GraSP', 'SCOPE'))) %>% 
   group_by(n,method, model) %>% 
   summarise(accuracy = mean(accuracy), time = mean(time)) 
 ```
 ```{r}
-p = 
 df %>%
   ggplot(aes(n, accuracy, color = method, shape = method)) +
     labs(x='n', y='Accuracy') +
     geom_point() +
     geom_line() + 
     #ylim(0,1) +
-    facet_grid(model ~ ., scale = "free")
+    facet_grid(. ~ model, scale = "free") + 
+    theme_bw()# + 
+    #theme(legend.position="bottom")
+```
+```{r}
+ggsave("SOTA.pdf", width = 8, height = 3)
+```
 
 
-q = df %>% 
+```{r}
+#q = 
+  df %>% 
   ggplot(aes(n, time, color = method, shape = method)) +
     labs(x='n', y='Runtime (Sec)') +
     geom_line() +

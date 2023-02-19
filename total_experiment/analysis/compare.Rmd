@@ -1,0 +1,82 @@
+```{r}
+library(tidyverse)
+linear = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/linear_experiment.csv') %>% select(-...1) %>% filter(!is.na(Lasso_accuracy))
+
+ising = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/ising_experiment.csv')  %>% 
+  filter(!is.na(Lasso_accuracy), k==40)
+```
+
+```{r}
+linear_supplement_IHT = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/linear_supplement_IHT.csv') %>% select(-...1) %>% filter(!is.na(IHT_accuracy))
+
+linear_new = left_join(linear, linear_supplement_IHT, by = c('n', 'seed'))
+```
+
+
+
+```{r}
+ising_supplement_IHT = read_csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/ising_supplement_IHT.csv') %>% select(-...1) %>% filter(!is.na(IHT_accuracy))
+
+ising_new = left_join(ising, ising_supplement_IHT, by = c('n', 'seed')) 
+```
+
+
+```{r}
+transform <- function(df, model){
+  bind_rows(
+  df %>% 
+    select(n,accuracy=SCOPE_accuracy) %>% 
+    mutate(method = 'SCOPE'),
+  df %>% 
+    select(n,accuracy=IHT_accuracy) %>% 
+    mutate(method = 'IHT'),
+#  df %>% 
+#    select(n,accuracy=IHT_cv_accuracy) %>% 
+#    mutate(method = 'IHT2'),
+  df %>% 
+    select(n,accuracy=GraSP_accuracy) %>% 
+    mutate(method = 'GraSP')
+  ) %>% 
+    mutate(model = model)
+}
+
+df = bind_rows(transform(linear_new, "Linear"),
+               transform(ising_new, "Ising"))
+```
+
+```{r}
+df = df %>% filter(n < 1001) %>% 
+  mutate(model = factor(x = model, levels = c("Linear", "Ising"))) %>% 
+  group_by(n,method, model) %>% 
+  summarise(accuracy = mean(accuracy)) 
+```
+```{r}
+df %>%
+  ggplot(aes(n, accuracy, color = method, shape = method)) +
+    labs(x='n', y='Accuracy') +
+    geom_point() +
+    geom_line() + 
+    #ylim(0,1) +
+    facet_grid(. ~ model, scale = "free") + 
+    theme(legend.position = "bottom")
+```
+
+
+```{r}
+#q = 
+  df %>% 
+  ggplot(aes(n, time, color = method, shape = method)) +
+    labs(x='n', y='Runtime (Sec)') +
+    geom_line() +
+    scale_y_log10() +
+    geom_point() +
+    facet_grid(model ~ ., scale = "free")
+```
+
+```{r}
+library(ggpubr)
+
+page = ggarrange(p,q,nrow=1,ncol=2,legend = 'bottom', common.legend = TRUE)
+
+ggexport(page, filename = 'SOTA.pdf', width = 10)
+```

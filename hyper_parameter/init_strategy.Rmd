@@ -6,7 +6,7 @@ date: '2022-08-31'
 
 ```{r}
 library(tidyverse)
-df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/hyper_parameter/init_strategy.csv') %>% 
+df = read_csv('/data/home/wangzz/github/splicing-universal-experiment/hyper_parameter/init_strategy_4.csv') %>% 
   select(-...1)
 ```
 
@@ -45,26 +45,29 @@ df_n = df2 %>%
 ## plot
 
 ```{r}
-#p1 = 
+p1 = 
 df_n %>% 
-  filter(n<=3000) %>% 
+  #filter(n<=1000) %>% 
 ggplot(aes(n, accuracy, color = method, shape = method)) +
     labs(x='n', y='Accuracy') +
     geom_line() +
     geom_point() +
-    #ylim(0,1) +
+    ylim(0,1) +
     labs(color='Initialization strategy', shape = "Initialization strategy")  +
-    facet_grid(model ~ ., scale = "free")
+    facet_wrap(model ~ ., ncol = 1, scale = "free") + 
+    theme_bw()
 ```
 
 ```{r}
-#p2 = 
-ggplot(df_n, aes(n, time, color = method, shape = method)) +
+p2 = 
+df_n %>% 
+ggplot(aes(n, time, color = method, shape = method)) +
     labs(x='n', y='Runtime (Sec)') +
     geom_line() +
     geom_point() +
     labs(color='Initialization strategy', shape = "Initialization strategy")  +
-    facet_grid(model ~ ., scale = "free")
+    facet_wrap(model ~ ., ncol = 1, scale = "free") +
+    theme_bw()
 ```
 
 ```{r}

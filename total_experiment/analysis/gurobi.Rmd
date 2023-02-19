@@ -8,7 +8,7 @@ output: html_document
 ```{r}
 library(tidyverse)
 df = read.csv('/data/home/wangzz/github/splicing-universal-experiment/total_experiment/results/gurobi_experiment.csv')
-df = as_tibble(df) %>% filter(snr==1)
+df = as_tibble(df) #%>% filter(snr==1)
 ```
 
 ```{r}
@@ -35,13 +35,15 @@ df2 %>%
         labels = scales::trans_format(
             "log10", 
             scales::math_format(10^.x))) +
-        labs(y='Runtime (sec)', x= "k")
+        labs(y='Runtime (sec)', x= "k") +
+        theme_bw()
 p2 = 
 df2 %>% 
     filter(n==50,p==50) %>%  
     ggplot(aes(as.factor(k), accuracy, fill = method)) +
         geom_boxplot() +
-        labs(y='Accuracy', x= "k")
+        labs(y='Accuracy', x= "k") +
+        theme_bw()
 ```
 
 
@@ -57,13 +59,15 @@ df2 %>% filter(n==100,k==10) %>%
           labels = scales::trans_format(
               "log10", 
               scales::math_format(10^.x))) +
-      labs(x = 'p', y = 'Runtime (sec)')  
+      labs(x = 'p', y = 'Runtime (sec)') +
+        theme_bw()  
 
 p4 = 
 df2 %>% filter(n==100,k==10) %>% 
   ggplot(aes(as.factor(p), accuracy, fill = method)) +
       geom_boxplot() +
-      labs(x = 'p', y = 'Accuracy') 
+      labs(x = 'p', y = 'Accuracy') +
+        theme_bw() 
 ```
 
 ## n changes
@@ -79,13 +83,15 @@ df2 %>% filter(p==100,k==10) %>%
             labels = scales::trans_format(
                 "log10", 
                 scales::math_format(10^.x))) +
-        labs(x = 'n', y = 'Runtime (sec)') 
+        labs(x = 'n', y = 'Runtime (sec)') +
+        theme_bw() 
 
 p6 = 
 df2 %>% filter(p==100,k==10) %>% 
     ggplot(aes(as.factor(n), accuracy, fill = method)) +
         geom_boxplot() +
-        labs(x = 'n', y = 'Accuracy') 
+        labs(x = 'n', y = 'Accuracy') +
+        theme_bw() 
 ```
 
 
