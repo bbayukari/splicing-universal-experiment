@@ -38,6 +38,7 @@ def task(n, seed):
     data_set = statistic_model_pybind.RegressionData(data.x, data.y)
 
     # run model
+    """
     t1 = time.time()
     Lasso_coef, Lasso_best_lambda = variable_select_algorithm.Lasso(
         loss_cvxpy=statistic_model.linear_cvxpy_no_intercept,
@@ -46,6 +47,7 @@ def task(n, seed):
         support_size=k,
         init_lambda=5e4
     )
+    """
     t2 = time.time()
     GraHTP_coef = variable_select_algorithm.GraHTP(
         loss_fn=statistic_model.linear_loss_no_intercept,
@@ -124,8 +126,8 @@ if __name__ == "__main__":
         memory_limit=80,
     )
 
-    if False:
-        experiment.check(n=[i*100 +100 for i in range(20)][0], seed=1)
+    if True:
+        experiment.check(n=1000, seed=1)
     else:
         parameters = parallel_experiment_util.para_generator(
             {"n": [50]},
