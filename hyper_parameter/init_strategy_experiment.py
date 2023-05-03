@@ -12,7 +12,7 @@ def task(n, seed, model):
     # make dataset
     if model == "Ising":
         p = 190
-        k = 20
+        k = 30
         data, theta, coef = statistic_model.ising_generator(P=20, N=n, Edges=k, seed=seed)
         data_set = statistic_model_pybind.IsingData(data)
     else:
@@ -88,9 +88,9 @@ if __name__ == "__main__":
         task=task,
         in_keys=in_keys,
         out_keys=out_keys,
-        processes=40,
-        name="init_strategy_2",
-        memory_limit=80
+        processes=20,
+        name="init_strategy_4",
+        memory_limit=40
     )
 
     if False:
@@ -99,7 +99,8 @@ if __name__ == "__main__":
         experiment.check(n=100, model="Ising", seed=100)
     else:
         parameters = parallel_experiment_util.para_generator(
-            {"n": [i * 200 + 200 for i in range(10)], "model": ["Linear", "Classification", "Ising"]},
+            {"n": [i * 100 + 100 for i in range(20)], "model": ["Linear", "Classification"]},
+            {"n": [i * 25 + 25 for i in range(20)], "model": ["Ising"]},
             repeat=100,
             seed=1,
         )
