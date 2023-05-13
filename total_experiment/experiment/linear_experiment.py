@@ -3,6 +3,7 @@ import statistic_model_pybind
 import variable_select_algorithm
 import parallel_experiment_util
 import abess
+import scope
 
 import numpy as np
 import time
@@ -24,21 +25,11 @@ def task(n, seed):
         family="gaussian",
         corr_type="exp",
         snr=10 * np.log10(6),
-        standardize=True,
         coef_=coef
-    )
-
-    # set model
-    model = abess.ConvexSparseSolver(model_size=p, support_size=k)
-    model.set_loss_custom(
-        statistic_model_pybind.linear_loss_no_intercept,
-        statistic_model_pybind.linear_gradient_no_intercept,
-        statistic_model_pybind.linear_hessian_no_intercept,
-    )
+    )  
     data_set = statistic_model_pybind.RegressionData(data.x, data.y)
 
     # run model
-    """
     t1 = time.time()
     Lasso_coef, Lasso_best_lambda = variable_select_algorithm.Lasso(
         loss_cvxpy=statistic_model.linear_cvxpy_no_intercept,
@@ -47,7 +38,7 @@ def task(n, seed):
         support_size=k,
         init_lambda=5e4
     )
-    """
+
     t2 = time.time()
     GraHTP_coef = variable_select_algorithm.GraHTP(
         loss_fn=statistic_model.linear_loss_no_intercept,
@@ -75,8 +66,12 @@ def task(n, seed):
     )
 
     t5 = time.time()
-    model.fit(data_set)
-    SCOPE_coef = model.get_solution()
+    SCOPE_coef = scope.ScopeSolver(p, k).solve(        
+        statistic_model_pybind.linear_loss_no_intercept,
+        data_set,
+        gradient=statistic_model_pybind.linear_gradient_no_intercept,
+        hessian=statistic_model_pybind.linear_hessian_no_intercept,
+        cpp=True)
     t6 = time.time()
 
     # return
@@ -123,11 +118,11 @@ if __name__ == "__main__":
         out_keys=out_keys,
         processes=5,
         name="linear_supplement",
-        memory_limit=80,
+        memory_limit=0.8,
     )
 
     if True:
-        experiment.check(n=1000, seed=1)
+        experiment.check(n=100, seed=1)
     else:
         parameters = parallel_experiment_util.para_generator(
             {"n": [50]},

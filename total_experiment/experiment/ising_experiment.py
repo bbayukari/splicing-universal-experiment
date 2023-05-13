@@ -3,9 +3,10 @@ import statistic_model_pybind
 import variable_select_algorithm
 import parallel_experiment_util
 import abess
-
+import scope
 import numpy as np
 import time
+
 
 def task(n, k, seed):
     result = {}
@@ -14,16 +15,8 @@ def task(n, k, seed):
     dataset = statistic_model_pybind.IsingData(data)
     dim = 190
     support_size = k
-    # set model
-    model = abess.ConvexSparseSolver(
-        model_size=dim, sample_size=n, support_size=support_size
-    )
-    model.set_loss_custom(
-        loss = statistic_model_pybind.ising_loss,
-        gradient = statistic_model_pybind.ising_grad,
-        hessian = statistic_model_pybind.ising_hess_diag
-    )
-
+    print(coef)
+    """
     # run model
     t1 = time.time()
     Lasso_coef, Lasso_best_lambda = variable_select_algorithm.Lasso(
@@ -59,12 +52,24 @@ def task(n, k, seed):
         data=dataset,
         support_size=support_size,
     )
+    """
     t5 = time.time()
-    model.fit(dataset)
-    SCOPE_coef = model.get_solution()
+
+    SCOPE_coef = scope.ScopeSolver(
+        dim,
+        support_size,
+        n,
+        file_log_level="debug"
+    ).solve(
+        statistic_model_pybind.ising_loss,
+        data=dataset,
+        gradient=statistic_model_pybind.ising_grad,
+        hessian=statistic_model_pybind.ising_hess_diag,
+        cpp=True,
+    )
     t6 = time.time()
 
-
+    """
     # return
     result["Lasso_accuracy"] = parallel_experiment_util.accuracy(Lasso_coef, coef)
     result["Lasso_best_lambda"] = Lasso_best_lambda
@@ -78,6 +83,7 @@ def task(n, k, seed):
     result["GraHTP_cv_time"] = t4 - t3
     result["GraSP_accuracy"] = parallel_experiment_util.accuracy(GraSP_coef, coef)
     result["GraSP_time"] = t5 - t4
+    """
     result["SCOPE_accuracy"] = parallel_experiment_util.accuracy(SCOPE_coef, coef)
     result["SCOPE_time"] = t6 - t5
     return result
@@ -87,36 +93,38 @@ if __name__ == "__main__":
     in_keys = ["n", "k", "seed"]
     out_keys = [
         "SCOPE_accuracy",
-        "SCOPE_time",
-        "GraHTP_accuracy",
-        "GraHTP_time",
-        "GraHTP_cv_accuracy",
-        "GraHTP_best_step_size",
-        "GraHTP_cv_time",
-        "GraSP_accuracy",
-        "GraSP_time",
-        "Lasso_accuracy",
-        "Lasso_best_lambda",
-        "Lasso_time",
-    ]
+        "SCOPE_time",]
+    """
+    "GraHTP_accuracy",
+    "GraHTP_time",
+    "GraHTP_cv_accuracy",
+    "GraHTP_best_step_size",
+    "GraHTP_cv_time",
+    "GraSP_accuracy",
+    "GraSP_time",
+    "Lasso_accuracy",
+    "Lasso_best_lambda",
+    "Lasso_time",
+    """
+    
 
     experiment = parallel_experiment_util.ParallelExperiment(
         task=task,
         in_keys=in_keys,
         out_keys=out_keys,
-        processes=3,
-        name="ising_supplement",
-        memory_limit=80
+        processes=8,
+        name="ising_supplement-3",
+        memory_limit=0.8,
     )
 
     if False:
-        experiment.check(n=1000, k=40, seed=1)
+        experiment.check(n=700, k=40, seed=708)
     else:
         parameters = parallel_experiment_util.para_generator(
-            {"n": [800], "k": [40]},
+            {"n": [i * 100 + 100 for i in range(10)], "k": [40]},
             repeat=10,
-            seed=31000,
+            seed=1234,
         )
-        
+
         experiment.run(parameters)
         experiment.save()
