@@ -6,3 +6,4 @@ logs/
 tem*
 */__pycache__/
 util/
+*.csv
