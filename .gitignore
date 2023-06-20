@@ -5,5 +5,4 @@ logs/
 *.out
 tem*
 */__pycache__/
-util/
 *.csv
