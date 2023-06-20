@@ -1,0 +1,82 @@
+```{r}
+library(tidyverse)
+
+df = read.csv('total_relax_sparsity.csv') %>% filter(!is.na(accuracy))
+```
+```{r}
+df = df %>%
+  mutate(model = case_when(
+    model == "linear" ~ "Linear",
+    model == "logistic" ~ "Classification",
+    model == "ising" ~ "Ising",
+    TRUE ~ model
+  )) %>% 
+  mutate(method = case_when(
+    method == "CVXPY" ~ "Lasso",
+    method == "GraHTP_1" ~ "GraHTP1",
+    method == "GraHTP_2" ~ "GraHTP2",
+    TRUE ~ method
+  )) 
+```
+```{r}
+#p = 
+df %>%
+  filter(relax_ratio==2) %>% 
+  mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising"))) %>%
+  mutate(method = factor(x = method, levels = c('Lasso', 'GraHTP1', 'GraHTP2', 'GraSP', 'SCOPE'))) %>%
+  group_by(n,method, model) %>% 
+  summarise(accuracy = mean(accuracy), time = mean(time)) %>%
+  ggplot(aes(n, accuracy, color = method, shape = method)) +
+    labs(x='n', y='Accuracy') +
+    geom_point() +
+    geom_line() + 
+    #ylim(0,1) +
+    facet_grid(. ~ model, scale = "free") + 
+    theme_bw() + 
+    theme(aspect.ratio = 2)
+    #theme(legend.position="bottom")
+```
+
+```{r}
+#p = 
+df %>%
+  filter(relax_ratio==1) %>% 
+  mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising"))) %>%
+  mutate(method = factor(x = method, levels = c('Lasso', 'GraHTP1', 'GraHTP2', 'GraSP', 'SCOPE'))) %>%
+  group_by(n,method, model) %>% 
+  summarise(accuracy = mean(accuracy), time = mean(time)) %>%
+  ggplot(aes(n, accuracy, color = method, shape = method)) +
+    labs(x='n', y='Accuracy') +
+    geom_point() +
+    geom_line() + 
+    #ylim(0,1) +
+    facet_grid(. ~ model, scale = "free") + 
+    theme_bw() + 
+    theme(aspect.ratio = 1.5)
+    #theme(legend.position="bottom")
+```
+
+```{r}
+#q = 
+df %>%
+  filter(relax_ratio==2) %>% 
+  mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising"))) %>%
+  mutate(method = factor(x = method, levels = c('Lasso', 'GraHTP1', 'GraHTP2', 'GraSP', 'SCOPE'))) %>%
+  group_by(n,method, model) %>% 
+  summarise(accuracy = mean(accuracy), time = mean(time)) %>%
+  ggplot(aes(n, time, color = method, shape = method)) +
+    labs(x='n', y='Runtime (Sec)') +
+    geom_line() +
+    scale_y_log10() +
+    geom_point() +
+    facet_grid(. ~ model, scale = "free") +
+    theme_bw()
+```
+
+```{r}
+library(ggpubr)
+
+page = ggarrange(p,q,nrow=2,ncol=1,legend = 'bottom', common.legend = TRUE)
+
+ggexport(page, filename = 'SOTA.pdf', width = 10)
+```

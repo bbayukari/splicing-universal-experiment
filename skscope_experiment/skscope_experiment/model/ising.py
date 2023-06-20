@@ -83,39 +83,26 @@ def loss_jax(params, data):
         ),
     )
 
+def data_cpp_wrapper(data):
+    return _skscope_experiment.IsingData(data.freq, data.table)
+
+def loss_cpp(para, data):
+    return _skscope_experiment.ising_loss(para, data)
+
+def grad_cpp(para, data):
+    return _skscope_experiment.ising_grad(para, data)
+
 
 if __name__ == "__main__":
-    true_params, data = data_generator(700, 190, 40, 708)
+    true_params, data = data_generator(700, 45, 5, 708)
 
-    print(true_params)
-    # print(np.count_nonzero(true_params))
-    true_params = np.zeros_like(true_params)
+    #print(true_params)
+    print(np.count_nonzero(true_params))
+    #true_params = np.zeros_like(true_params)
     print(loss_jax(jnp.array(true_params), data))
 
     true_params_cvxpy = cp.Variable(len(true_params))
     true_params_cvxpy.value = true_params
     print(loss_cvxpy(true_params_cvxpy, data).value)
 
-    from statistic_model_pybind import ising_loss, IsingData, ising_grad, ising_hess_diag
-    from jax import grad, hessian
-
-    print(
-        ising_loss(
-            true_params, IsingData(np.hstack((data.freq.reshape(-1, 1), data.table)))
-        )
-    )
     
-    print(np.sum(np.square(ising_grad(
-        true_params, IsingData(np.hstack((data.freq.reshape(-1, 1), data.table)))
-    ) - grad(loss_jax)(jnp.array(true_params), data))))
-    
-    hess_cpp = ising_hess_diag(
-        true_params, IsingData(np.hstack((data.freq.reshape(-1, 1), data.table)))
-    ).diagonal()
-    hess_jax = hessian(loss_jax)(jnp.array(true_params), data).diagonal()
-
-    print(np.sum(np.square(hess_cpp - hess_jax)))
-
-    print(hess_cpp)
-
-    print(grad(loss_jax)(jnp.array(true_params), data))

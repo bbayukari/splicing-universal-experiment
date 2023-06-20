@@ -2,23 +2,38 @@ import jax.numpy as jnp
 import numpy as np
 import cvxpy as cp
 from abess import make_glm_data
+import _skscope_experiment
 
 def data_generator(n, p, k, seed):
     coef = np.zeros(p)
     np.random.seed(seed)
-    coef[np.random.choice(np.arange(p), k, replace=False)] = np.random.choice([100, -100], k)
-    data = make_glm_data(
-        n=n,
-        p=p,
-        k=k,
-        rho=0.2,
-        family="binomial",
-        corr_type="exp",
-        snr=10 * np.log10(6),
-        coef_=coef
-    )
-    return coef, (data.x, data.y)
+    coef[np.random.choice(np.arange(p), k, replace=False)] = np.random.choice([1, -1], k) * 100
+    # generate correlation matrix with exponential decay
+    R = np.zeros((p, p))
+    for i in range(p):
+        for j in range(i, p):
+            R[i, j] = 0.1 ** abs(i - j)
+    R = R + R.T - np.identity(p)
+
+    x = np.random.multivariate_normal(mean=np.zeros(p), cov=R, size=(n,)) / np.sqrt(n) * 10
+
+    xbeta = np.matmul(x, coef)
+    xbeta[xbeta > 30] = 30
+    xbeta[xbeta < -30] = -30
+
+    p = np.exp(xbeta) / (1 + np.exp(xbeta))
+    y = np.random.binomial(1, p)
+
+    return coef, (x, y)
     
+def data_cpp_wrapper(data):
+    return _skscope_experiment.RegressionData(data[0], data[1])
+
+def loss_cpp(params, data):
+    return _skscope_experiment.logistic_loss(params, data)
+
+def grad_cpp(params, data):
+    return _skscope_experiment.logistic_grad(params, data)
 
 def loss_jax(params, data):
     Xbeta = data[0] @ params

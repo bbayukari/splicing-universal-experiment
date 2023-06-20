@@ -11,7 +11,7 @@ def task(loss_jax, loss_cvxpy, data_generator, sample_size, dim, sparsity_level,
     loss_cvxpy_data = lambda x: loss_cvxpy(x, data)
     # SCOPE, GraSP
     for method, solver in {
-        "SCOPE": scope.ScopeSolver(dim, sparsity_level),
+        "SCOPE": scope.ScopeSolver(dim, sparsity_level, greedy=False),
         "GraSP": scope.GraspSolver(dim, sparsity_level),
     }.items():
         for jit in [True]:#, False]:

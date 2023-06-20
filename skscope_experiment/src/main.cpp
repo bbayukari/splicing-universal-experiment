@@ -15,7 +15,46 @@ using Eigen::ArrayXd;
 using Eigen::Matrix;
 namespace py = pybind11;
 
+struct RegressionData {
+    MatrixXd x;
+    VectorXd y;
+    RegressionData(MatrixXd x, VectorXd y) : x(x), y(y){
+        if (x.rows() != y.rows()) {
+            throw std::invalid_argument("x and y must have the same number of rows");
+        }
+    }
+};
 
+//**********************************************************************************
+// linear model 
+//**********************************************************************************
+double linear_loss(VectorXd const& para, py::object const& ex_data) {
+    RegressionData* data = ex_data.cast<RegressionData*>();  // unwrap the pointer
+    return (data->x * para - data->y).squaredNorm();  // compute the loss
+}
+VectorXd linear_gradient(VectorXd const& para, py::object const& ex_data) {
+    RegressionData* data = ex_data.cast<RegressionData*>();  // unwrap the pointer
+    VectorXd result = 2 * data->x.transpose() * (data->x * para - data->y);
+    return result;  // compute the gradient
+}
+
+//**********************************************************************************
+// logistic model
+//**********************************************************************************
+double logistic_loss(VectorXd const& para, py::object const& ex_data) {
+    RegressionData* data = ex_data.cast<RegressionData*>();
+    ArrayXd xbeta = (data->x * para).array();
+    xbeta = xbeta.max(-30.0).min(30.0);
+    return ((xbeta.exp()+1.0).log() - (data->y).array()*xbeta).sum();
+}
+
+VectorXd logistic_gradient(VectorXd const& para, py::object const& ex_data) {
+    RegressionData* data = ex_data.cast<RegressionData*>();
+    ArrayXd xbeta = (data->x * para).array();
+    xbeta = xbeta.max(-30.0).min(30.0);
+    ArrayXd xbeta_exp = xbeta.exp();
+    return data->x.transpose() * (xbeta_exp / (xbeta_exp + 1.0) - (data->y).array()).matrix();
+}
 
 //**********************************************************************************
 // Ising model data structure and generator
@@ -75,12 +114,79 @@ Eigen::MatrixXd sample_by_conf(int sample_size, Eigen::MatrixXd theta, int seed)
   return data;
 }
 
+struct IsingData{
+    MatrixXd table;
+    VectorXd freq;
+    const int p;
+    MatrixXi index_translator;
+    IsingData(VectorXd freq, MatrixXd table): p(table.cols()) {
+        this->freq = freq;
+        this->table = table;
+        index_translator.resize(p,p);
+        int count = 0;
+        for(Eigen::Index i = 0; i < p; i++){
+            for(Eigen::Index j = i+1; j < p; j++){
+                index_translator(i,j) = count;
+                index_translator(j,i) = count;
+                count++;
+            }
+        }
+    }
+};
 
+//**********************************************************************************
+// Ising model loss
+//**********************************************************************************
+double ising_loss(VectorXd const& para, py::object const& ex_data) {
+    IsingData* data = ex_data.cast<IsingData*>();
+    double loss = 0.0;
 
+    for(int i = 0; i < data->table.rows(); i++){
+        for(int k=0; k< data->p; k++){
+            double tmp = 0.0;
+            for(int j = 0; j < data->p; j++){
+                if (j == k) continue;
+                tmp += data->table(i,k) * data->table(i,j) * para(data->index_translator(k,j));
+            }
+            loss += data->freq(i) * log(1+exp(-2 * tmp));
+        }
+    }
+    return loss;
+}
+
+VectorXd ising_grad(VectorXd const& para, py::object const& ex_data) {
+    IsingData* data = ex_data.cast<IsingData*>();
+    VectorXd grad_para = VectorXd::Zero(para.size());
+
+    for(int i = 0; i < data->table.rows(); i++){
+        for(int k=0; k< data->p; k++){
+            double tmp = 0.0;
+            for(int j = 0; j < data->p; j++){
+                if (j == k) continue;
+                tmp += data->table(i,k) * data->table(i,j) * para(data->index_translator(k,j));
+            }
+            double exp_tmp = 2 * data->freq(i) * data->table(i,k)  / (1+exp(2 * tmp));
+            for(int j = 0; j < data->p; j++){
+                if (j == k) continue;
+                grad_para(data->index_translator(k,j)) -= exp_tmp * data->table(i,j);
+            }
+        }
+    }
+
+    return grad_para;
+}
 
 //**********************************************************************************
 // pybind11 module
 //**********************************************************************************
 PYBIND11_MODULE(_skscope_experiment, m) {
     m.def("ising_generator", &sample_by_conf);
+    pybind11::class_<RegressionData>(m, "RegressionData").def(py::init<MatrixXd, VectorXd>());
+    m.def("linear_loss", &linear_loss);
+    m.def("linear_grad", &linear_gradient);
+    m.def("logistic_loss", &logistic_loss);
+    m.def("logistic_grad", &logistic_gradient);
+    py::class_<IsingData>(m, "IsingData").def(py::init<VectorXd, MatrixXd>());
+    m.def("ising_loss", &ising_loss);
+    m.def("ising_grad", &ising_grad);
 }

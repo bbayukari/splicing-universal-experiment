@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 import cvxpy as cp
 import abess
+import _skscope_experiment
 
 def data_generator(n, p, k, seed):
     coef = np.zeros(p)
@@ -11,13 +12,23 @@ def data_generator(n, p, k, seed):
         n=n,
         p=p,
         k=k,
-        rho=0.2,
+        rho=0.1,
         family="gaussian",
         corr_type="exp",
-        snr=10 * np.log10(6),
+        snr=10 * np.log10(60),
+        sigma=0,
         coef_=coef
     )
     return coef, (data.x, data.y)
+
+def data_cpp_wrapper(data):
+    return _skscope_experiment.RegressionData(data[0], data[1])
+
+def loss_cpp(params, data):
+    return _skscope_experiment.linear_loss(params, data)
+
+def grad_cpp(params, data):
+    return _skscope_experiment.linear_grad(params, data)
 
 def loss_jax(params, data):
     return jnp.sum(jnp.square(data[1] - data[0] @ params))
