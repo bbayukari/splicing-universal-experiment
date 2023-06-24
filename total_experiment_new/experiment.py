@@ -130,14 +130,14 @@ if __name__ == "__main__":
         in_keys=["model", "n", "p", "k", "seed", "relax_ratio"],
         out_keys=["method", "time", "accuracy"],
         processes=8,
-        name="total_relax_sparsity-2",
+        name="total_SOTA",
         memory_limit=0.9,
     )
 
     if False:
-        # experiment.check(model="linear", n=200, p=500, k=50, seed=11)
-        # experiment.check(model="logistic", n=1000, p=500, k=50, seed=1099)
-        experiment.check(model="ising", n=200, p=190, k=40, seed=708, relax_ratio=1.0)
+        experiment.check(model="linear", n=200, p=50, k=5, seed=11, relax_ratio=1.0)
+        # experiment.check(model="logistic", n=1000, p=500, k=50, seed=1099, relax_ratio=1.0)
+        #experiment.check(model="ising", n=200, p=190, k=40, seed=708, relax_ratio=1.0)
     else:
         parameters = parallel_experiment_util.para_generator(
             {
@@ -145,16 +145,16 @@ if __name__ == "__main__":
                 "n": [i * 100 + 100 for i in range(10)],
                 "p": [500],
                 "k": [50],
-                "relax_ratio": [1.0, 1.5, 2.0],
+                "relax_ratio": [1.0],
             },
             {
                 "model": ["ising"],
                 "n": [i * 100 + 100 for i in range(10)],
                 "p": [190],
                 "k": [40],
-                "relax_ratio": [1.0, 1.5, 2.0],
+                "relax_ratio": [1.0],
             },
-            repeat=95,
+            repeat=100,
             seed=0,
         )
 

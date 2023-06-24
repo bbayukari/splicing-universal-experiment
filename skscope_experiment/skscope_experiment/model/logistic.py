@@ -12,10 +12,10 @@ def data_generator(n, p, k, seed):
     R = np.zeros((p, p))
     for i in range(p):
         for j in range(i, p):
-            R[i, j] = 0.1 ** abs(i - j)
+            R[i, j] = 0.2 ** abs(i - j)
     R = R + R.T - np.identity(p)
 
-    x = np.random.multivariate_normal(mean=np.zeros(p), cov=R, size=(n,)) / np.sqrt(n) * 10
+    x = np.random.multivariate_normal(mean=np.zeros(p), cov=R, size=(n,))
 
     xbeta = np.matmul(x, coef)
     xbeta[xbeta > 30] = 30

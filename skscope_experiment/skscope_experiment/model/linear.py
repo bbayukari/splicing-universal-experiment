@@ -8,18 +8,20 @@ def data_generator(n, p, k, seed):
     coef = np.zeros(p)
     np.random.seed(seed)
     coef[np.random.choice(np.arange(p), k, replace=False)] = np.random.choice([100, -100], k)
-    data = abess.make_glm_data(
-        n=n,
-        p=p,
-        k=k,
-        rho=0.1,
-        family="gaussian",
-        corr_type="exp",
-        snr=10 * np.log10(60),
-        sigma=0,
-        coef_=coef
-    )
-    return coef, (data.x, data.y)
+    R = np.zeros((p, p))
+    for i in range(p):
+        for j in range(i, p):
+            R[i, j] = 0.2 ** abs(i - j)
+    R = R + R.T - np.identity(p)
+
+    x = np.random.multivariate_normal(mean=np.zeros(p), cov=R, size=(n,))
+    y = np.matmul(x, coef)
+    power = np.mean(np.square(y))
+    npower = power / 6
+    noise = np.random.randn(len(y)) * np.sqrt(npower)
+    y += noise
+    
+    return coef, (x, y)
 
 def data_cpp_wrapper(data):
     return _skscope_experiment.RegressionData(data[0], data[1])

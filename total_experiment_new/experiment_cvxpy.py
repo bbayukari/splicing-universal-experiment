@@ -3,12 +3,10 @@ from skscope_experiment import (
     logistic,
     ising,
 )
-import scope
 import time
 import numpy as np
 import cvxpy as cp
 import parallel_experiment_util
-import jax
 
 model_dict = {
     "linear": linear,
@@ -86,8 +84,8 @@ if __name__ == "__main__":
         memory_limit=0.9,
     )
 
-    if True:
-        experiment.check(model="logistic", n=1000, p=500, k=50, seed=1099, relax_ratio=1.0)
+    if False:
+        experiment.check(model="logistic", n=100, p=50, k=5, seed=1099, relax_ratio=1.0)
     else:
         parameters = parallel_experiment_util.para_generator(
             {
@@ -102,7 +100,7 @@ if __name__ == "__main__":
         )
 
         experiment.run(parameters)
-        experiment.save("cvxpy"+"")
+        experiment.save("cvxpy"+"_1_2")
 
 """
             {

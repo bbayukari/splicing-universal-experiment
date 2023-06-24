@@ -26,8 +26,7 @@ def task(n, p, k, seed):
         rho=0.2,
         family="gaussian",
         corr_type="exp",
-        snr=10 * np.log10(60),
-        sigma=0,
+        snr=10 * np.log10(1),
         coef_=coef
     )
     true_params, data = coef, (data.x, data.y)
@@ -43,8 +42,7 @@ def task(n, p, k, seed):
         t1 = time.perf_counter()
         solver.solve(loss_cpp_data, gradient=grad_cpp_data)
         t2 = time.perf_counter()
-        params = solver.get_estimated_params()
-        support_set = set(np.argpartition(np.abs(params), -k)[-k:])
+        support_set = set(solver.get_support())
         results.append(
             {
                 "method": method,
@@ -67,7 +65,7 @@ if __name__ == "__main__":
     )
 
     if False:
-        experiment.check(n=200, p=500, k=50, seed=11)
+        experiment.check(n=50, p=50, k=10, seed=451)
     else:
         parameters = parallel_experiment_util.para_generator(
             {"n": [i * 100 + 100 for i in range(10)], "p": [100], "k": [10]},
