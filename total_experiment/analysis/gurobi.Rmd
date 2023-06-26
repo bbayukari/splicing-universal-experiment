@@ -11,22 +11,22 @@ df = read.csv('/home/wangzz/github/splicing-universal-experiment/total_experimen
 df = as_tibble(df) #%>% filter(snr==1)
 ```
 ```{r}
-df_new = read.csv('/home/wangzz/github/splicing-universal-experiment/total_experiment_new/gurobi_experiment.csv')
+df_new = read.csv('/home/wangzz/github/splicing-universal-experiment/total_experiment/results/gurobi_experiment_new.csv')
 df_new = as_tibble(df_new) #%>% filter(snr==1)
 ```
-
+  df %>% 
+    select(n, p, k, time = SCOPE_time, accuracy = SCOPE_accuracy) %>% 
+    mutate(method = 'SCOPE'),  
 
 ```{r}
 df2 = bind_rows(
   df %>% 
     select(n, p, k, time = GUROBI_time, accuracy = GUROBI_accuracy) %>% 
     mutate(method = 'GUROBI'),
-  df %>% 
-    select(n, p, k, time = SCOPE_time, accuracy = SCOPE_accuracy) %>% 
-    mutate(method = 'SCOPE'),  
+
   df_new %>% 
     select(n, p, k, time = time, accuracy = accuracy) %>% 
-    mutate(method = 'SCOPE_new'), 
+    mutate(method = 'SCOPE'), 
 ) 
 ```
 

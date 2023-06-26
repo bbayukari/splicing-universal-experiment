@@ -1,0 +1,80 @@
+---
+title: "analysis"
+output: html_document
+date: '2022-08-31'
+---
+
+```{r}
+library(tidyverse)
+df = read_csv('scope_k_max.csv') %>% 
+  select(-...1)
+```
+
+```{r}
+df = df %>%
+  mutate(model = case_when(
+    model == "linear" ~ "Linear",
+    model == "logistic" ~ "Classification",
+    model == "ising" ~ "Ising",
+    TRUE ~ model
+  )) %>%
+  mutate(max_exchange_num = 
+           factor(x=max_exchange_num, 
+                  levels = c(1, 2, 5, 10, 20, 40)
+  )) %>%
+  mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising")))
+```
+
+
+
+
+
+
+
+## plot
+
+
+
+```{r}
+data = df %>% 
+  #filter(!max_exchange_num %in% c("20", "40")) %>% 
+  group_by(n, model, max_exchange_num) %>% 
+  summarise(time=mean(time), accuracy=mean(accuracy))
+```
+
+
+
+```{r}
+p1 = 
+ggplot(data, aes(n, accuracy, color = max_exchange_num, shape = max_exchange_num)) +
+    labs(x='n', y='Accuracy') +
+    geom_line() +
+    geom_point() +
+    #ylim(0,1) + 
+    labs(color='Maximum splicing size', shape = "Maximum splicing size")  +  
+    facet_grid(model ~ ., scale = "free") + 
+    theme_bw()
+```
+
+```{r}
+#p2 = 
+ggplot(data, aes(n, time, color = max_exchange_num, shape = max_exchange_num)) +
+    labs(x='n', y='Runtime (Sec)') +
+    geom_line() +
+    geom_point() +
+    labs(color='Maximum splicing size', shape = "Maximum splicing size")  +  
+    facet_grid(model ~ ., scale = "free") + 
+    theme_bw()
+```
+```{r}
+p1
+p2
+```
+
+```{r}
+library(ggpubr)
+
+page = ggarrange(p1,p2,nrow=1,ncol=2,legend = 'bottom', common.legend = TRUE)
+
+ggexport(page, filename = 'k_max.pdf', width = 10)
+```

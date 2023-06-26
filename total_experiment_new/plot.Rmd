@@ -1,7 +1,7 @@
 ```{r}
 library(tidyverse)
 
-df = read.csv('total_relax_sparsity.csv') %>% filter(!is.na(accuracy))
+df = read.csv('total_SOTA.csv') %>% filter(!is.na(accuracy))
 ```
 ```{r}
 df = df %>%
@@ -38,9 +38,10 @@ df %>%
 ```
 
 ```{r}
-#p = 
+p = 
 df %>%
-  filter(relax_ratio==1) %>% 
+  filter(relax_ratio==1, n<=900) %>%
+  filter(model=="Classification" | n <=600) %>%
   mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising"))) %>%
   mutate(method = factor(x = method, levels = c('Lasso', 'GraHTP1', 'GraHTP2', 'GraSP', 'SCOPE'))) %>%
   group_by(n,method, model) %>% 
@@ -50,16 +51,18 @@ df %>%
     geom_point() +
     geom_line() + 
     #ylim(0,1) +
-    facet_grid(. ~ model, scale = "free") + 
+    scale_x_continuous(breaks = seq(100, 900, 100)) + 
     theme_bw() + 
-    theme(aspect.ratio = 1.5)
+    facet_grid(. ~ model, scale = "free")
+    #theme(aspect.ratio = 1.5)
     #theme(legend.position="bottom")
 ```
 
 ```{r}
-#q = 
+q = 
 df %>%
-  filter(relax_ratio==2) %>% 
+  filter(relax_ratio==1, n<=900) %>%
+  filter(model=="Classification" | n <=600) %>%
   mutate(model = factor(x = model, levels = c("Linear", "Classification", "Ising"))) %>%
   mutate(method = factor(x = method, levels = c('Lasso', 'GraHTP1', 'GraHTP2', 'GraSP', 'SCOPE'))) %>%
   group_by(n,method, model) %>% 
@@ -68,6 +71,7 @@ df %>%
     labs(x='n', y='Runtime (Sec)') +
     geom_line() +
     scale_y_log10() +
+    scale_x_continuous(breaks = seq(100, 900, 100)) + 
     geom_point() +
     facet_grid(. ~ model, scale = "free") +
     theme_bw()
