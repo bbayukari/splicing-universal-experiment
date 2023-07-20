@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 import cvxpy as cp
 from sklearn.metrics.pairwise import rbf_kernel
-
+import _skscope_experiment
 
 def hsic(X, y, gamma_x=0.7, gamma_y=0.7):
     n, p = X.shape
@@ -50,19 +50,33 @@ def data_generator(n, p, sparsity_level, seed):
 
 
 def loss_jax(params, data):
-    return jnp.mean(jnp.square(data[1] - data[0] @ jnp.abs(params)))
+    return jnp.sum(jnp.square(data[1] - data[0] @ jnp.abs(params)))
 
 
 def loss_cvxpy(params, data):
-    return cp.sum_squares(data[1] - data[0] @ params) / len(data[1])
+    return cp.sum_squares(data[1] - data[0] @ params)
 
 def cvxpy_constraints(params):
     return [params >= 0.0]
 
+def data_cpp_wrapper(data):
+    return _skscope_experiment.RegressionData(data[0], data[1])
+
+def loss_cpp(params, data):
+    return _skscope_experiment.positive_loss(params, data)
+
+def grad_cpp(params, data):
+    return _skscope_experiment.positive_grad(params, data)
+
 if __name__ == "__main__":
-    true_params, data = data_generator(20, 10, 6, 0)
+    true_params, data = data_generator(20, 10, 5, 0)
     print(true_params)
     print(loss_jax(jnp.array(true_params), data))
     true_params_cvxpy = cp.Variable(len(true_params))
     true_params_cvxpy.value = true_params
     print(loss_cvxpy(true_params_cvxpy, data).value)
+    print(loss_cpp(true_params, data_cpp_wrapper(data)))
+
+    import jax
+    print(jax.grad(loss_jax)(jnp.array(true_params), data))
+    print(grad_cpp(true_params, data_cpp_wrapper(data)))

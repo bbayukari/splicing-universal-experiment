@@ -18,8 +18,10 @@ namespace py = pybind11;
 struct RegressionData {
     MatrixXd x;
     VectorXd y;
-    RegressionData(MatrixXd x, VectorXd y) : x(x), y(y){
-        if (x.rows() != y.rows()) {
+    MatrixXd y_multi;
+    RegressionData(MatrixXd X, MatrixXd Y) : x(X), y_multi(Y){
+        this->y = Y.col(0);
+        if (X.rows() != Y.rows()) {
             throw std::invalid_argument("x and y must have the same number of rows");
         }
     }
@@ -37,6 +39,58 @@ VectorXd linear_gradient(VectorXd const& para, py::object const& ex_data) {
     VectorXd result = 2 * data->x.transpose() * (data->x * para - data->y);
     return result;  // compute the gradient
 }
+//**********************************************************************************
+// multi output linear model 
+//**********************************************************************************
+double multitask_loss(VectorXd const& para, py::object const& ex_data) {
+    RegressionData* data = ex_data.cast<RegressionData*>();  // unwrap the pointer
+    // reshape para
+    int m = data->y_multi.cols();
+    int p = data->x.cols();
+    MatrixXd para_mat = MatrixXd::Zero(p, m);
+    for(int i = 0; i < p; i++){
+        para_mat.row(i) = para.segment(i*m, m);
+    }
+    return (data->x * para_mat - data->y_multi).squaredNorm();  // compute the loss
+}
+VectorXd multitask_gradient(VectorXd const& para, py::object const& ex_data) {
+    RegressionData* data = ex_data.cast<RegressionData*>();  // unwrap the pointer
+    // reshape para
+    int m = data->y_multi.cols();
+    int p = data->x.cols();
+    MatrixXd para_mat = MatrixXd::Zero(p, m);
+    for(int i = 0; i < p; i++){
+        para_mat.row(i) = para.segment(i*m, m);
+    }
+    MatrixXd result = 2 * data->x.transpose() * (data->x * para_mat - data->y_multi);
+    // flatten result
+    VectorXd result_vec = VectorXd::Zero(p*m);
+    for(int i = 0; i < p; i++){
+        result_vec.segment(i*m, m) = result.row(i);
+    }
+    return result_vec;  // compute the gradient
+}
+
+//**********************************************************************************
+// positive linear model 
+//**********************************************************************************
+double positive_linear_loss(VectorXd const& para, py::object const& ex_data) {
+    RegressionData* data = ex_data.cast<RegressionData*>();  // unwrap the pointer
+    return (data->x * para.cwiseAbs() - data->y).squaredNorm();  // compute the loss
+}
+VectorXd positive_linear_gradient(VectorXd const& para, py::object const& ex_data) {
+    RegressionData* data = ex_data.cast<RegressionData*>();  // unwrap the pointer
+    VectorXd result = 2 * data->x.transpose() * (data->x * para.cwiseAbs() - data->y);
+    VectorXd sig = para.cwiseSign();
+    // set to 1 if sig is 0
+    for(int i = 0; i < sig.size(); i++){
+        if(sig(i) == 0){
+            sig(i) = 1;
+        }
+    }
+    return result.cwiseProduct(sig);  // compute the gradient
+}
+
 
 //**********************************************************************************
 // logistic model
@@ -148,7 +202,11 @@ double ising_loss(VectorXd const& para, py::object const& ex_data) {
                 if (j == k) continue;
                 tmp += data->table(i,k) * data->table(i,j) * para(data->index_translator(k,j));
             }
-            loss += data->freq(i) * log(1+exp(-2 * tmp));
+            // avoid inf
+            if (tmp < -30) 
+                loss += data->freq(i) * (-2 * tmp);
+            else if (tmp < 30)
+                loss += data->freq(i) * log(1+exp(-2 * tmp));
         }
     }
     return loss;
@@ -177,11 +235,36 @@ VectorXd ising_grad(VectorXd const& para, py::object const& ex_data) {
 }
 
 //**********************************************************************************
+// trend filter
+//**********************************************************************************
+struct TimeSeriesData {
+    VectorXd y;
+    TimeSeriesData(VectorXd Y) : y(Y){}
+};
+
+double trend_filter_loss(VectorXd const& para, py::object const& ex_data) {
+    TimeSeriesData* data = ex_data.cast<TimeSeriesData*>();
+    VectorXd cumsum_para = VectorXd::Zero(para.size());
+    std::partial_sum(para.data(), para.data() + para.size(), cumsum_para.data(), std::plus<double>());
+    return (data->y - cumsum_para).squaredNorm() / para.size();
+}
+VectorXd trend_filter_grad(VectorXd const& para, py::object const& ex_data){
+    TimeSeriesData* data = ex_data.cast<TimeSeriesData*>();
+    VectorXd cumsum_para = VectorXd::Zero(para.size());
+    std::partial_sum(para.data(), para.data() + para.size(), cumsum_para.data(), std::plus<double>());
+    VectorXd grad = 2 * (cumsum_para - data->y);
+    VectorXd grad_para = VectorXd::Zero(grad.size());
+    for(int i = 0; i < grad.size(); i++) grad_para(i) = grad.tail(grad.size() - i).sum();
+    return grad_para / para.size();
+}
+
+
+//**********************************************************************************
 // pybind11 module
 //**********************************************************************************
 PYBIND11_MODULE(_skscope_experiment, m) {
     m.def("ising_generator", &sample_by_conf);
-    pybind11::class_<RegressionData>(m, "RegressionData").def(py::init<MatrixXd, VectorXd>());
+    pybind11::class_<RegressionData>(m, "RegressionData").def(py::init<MatrixXd, MatrixXd>());
     m.def("linear_loss", &linear_loss);
     m.def("linear_grad", &linear_gradient);
     m.def("logistic_loss", &logistic_loss);
@@ -189,4 +272,11 @@ PYBIND11_MODULE(_skscope_experiment, m) {
     py::class_<IsingData>(m, "IsingData").def(py::init<VectorXd, MatrixXd>());
     m.def("ising_loss", &ising_loss);
     m.def("ising_grad", &ising_grad);
+    m.def("multitask_loss", &multitask_loss);
+    m.def("multitask_grad", &multitask_gradient);
+    m.def("positive_loss", &positive_linear_loss);
+    m.def("positive_grad", &positive_linear_gradient);
+    py::class_<TimeSeriesData>(m, "TimeSeriesData").def(py::init<VectorXd>());
+    m.def("trend_filter_loss", &trend_filter_loss);
+    m.def("trend_filter_grad", &trend_filter_grad);
 }

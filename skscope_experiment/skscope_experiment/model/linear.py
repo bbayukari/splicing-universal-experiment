@@ -1,7 +1,6 @@
 import jax.numpy as jnp
 import numpy as np
 import cvxpy as cp
-import abess
 import _skscope_experiment
 
 def data_generator(n, p, k, seed):
@@ -45,3 +44,6 @@ if __name__ == "__main__":
     true_params_cvxpy = cp.Variable(len(true_params))
     true_params_cvxpy.value = true_params
     print(loss_cvxpy(true_params_cvxpy, data).value)
+    import jax
+    print(jax.grad(loss_jax)(jnp.array(true_params), data))
+    print(grad_cpp(true_params, data_cpp_wrapper(data)))
