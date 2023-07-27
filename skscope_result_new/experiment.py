@@ -29,9 +29,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
         sample_size, dim, sparsity_level, seed
     )
     true_support_set = set(np.nonzero(true_params)[0])
-    data_cpp = model_dict[model].data_cpp_wrapper(data)
-    loss_data = lambda x: model_dict[model].loss_cpp(x, data_cpp)
-    grad_data = lambda x: model_dict[model].grad_cpp(x, data_cpp)
+    loss_data = lambda x: model_dict[model].loss_jax(x, data)
     group = [i for i in range(dim) for _ in range(n_outputs)]
     dim = dim * n_outputs
     sparsity_level = sparsity_level * n_outputs
@@ -42,7 +40,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
         "OMP": OMPSolver(dim, sparsity_level, group=group),
     }.items():
         t1 = time.perf_counter()
-        solver.solve(loss_data, gradient=grad_data)
+        solver.solve(loss_data, jit=True)
         t2 = time.perf_counter()
         results.append(
             {
@@ -61,7 +59,10 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
         best_loss = np.inf
         for step_size in [1.0, 0.1, 0.01, 0.001, 0.0001]:
             solver.set_params(step_size=step_size)
-            solver.solve(loss_data, gradient=grad_data)
+            try:
+                solver.solve(loss_data, jit=True)
+            except:
+                continue
             loss = solver.objective_value
             if loss < best_loss:
                 best_loss = loss
@@ -72,7 +73,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
                     / sparsity_level,
                 }
         results.append(result)
-
+    """
     # CVXPY
     if model == "multitask":
         x = cp.Variable((int(dim / n_outputs), n_outputs))
@@ -117,7 +118,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
             / sparsity_level,
         }
     )
-
+    """
     return results
 
 
@@ -127,11 +128,11 @@ if __name__ == "__main__":
         in_keys=["model", "sample_size", "dim", "sparsity_level", "seed"],
         out_keys=["method", "time", "accuracy"],
         processes=8,
-        name="skscope_experiment-3",
-        memory_limit=0.8,
+        name="skscope_experiment-py",
+        memory_limit=0.95,
     )
 
-    if True:
+    if False:
         # experiment.check(model="multitask", sample_size=1000, dim=500, sparsity_level=50, seed=1)
         # experiment.check(model="non_linear", sample_size=1000, dim=50, sparsity_level=10, seed=1)
         # experiment.check(model="linear", sample_size=1000, dim=500, sparsity_level=50, seed=294)
