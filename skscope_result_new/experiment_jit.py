@@ -34,13 +34,13 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
     sparsity_level = sparsity_level * n_outputs
     for method, solver in {
         "SCOPE": ScopeSolver(dim, sparsity_level, group=group),
-        "GraSP": GraspSolver(dim, sparsity_level, group=group),
-        "FoBa": FobaSolver(dim, sparsity_level, group=group),
-        "OMP": OMPSolver(dim, sparsity_level, group=group),
+        #"GraSP": GraspSolver(dim, sparsity_level, group=group),
+        #"FoBa": FobaSolver(dim, sparsity_level, group=group),
+        #"OMP": OMPSolver(dim, sparsity_level, group=group),
     }.items():
         for is_jit in [True, False]:
             t1 = time.perf_counter()
-            solver.solve(loss_data, jit=is_jit)
+            solver.solve(loss_data, jit=True)
             t2 = time.perf_counter()
             results.append(
                 {
@@ -51,6 +51,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
                     / sparsity_level,
                 }
             )
+    """
     # IHT, HTP
     for method, solver in {
         "IHT": IHTSolver(dim, sparsity_level, group=group),
@@ -76,7 +77,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
                         / sparsity_level,
                     }
             results.append(result)
-
+    """
     return results
 
 
@@ -89,14 +90,20 @@ if __name__ == "__main__":
         name="skscope_experiment_jit",
         memory_limit=0.9,
     )
-
-    if False:
+    import cProfile, pstats
+    if True:
+        cProfile.run(
+            'experiment.check(model="trend_filter", sample_size=600, dim=600, sparsity_level=5, seed=901)',
+            "profile_data",
+        )
+        p = pstats.Stats("profile_data")
+        p.sort_stats("cumulative").print_stats(200)
         # experiment.check(model="multitask", sample_size=600, dim=500, sparsity_level=50, seed=1)
         # experiment.check(model="non_linear", sample_size=600, dim=50, sparsity_level=10, seed=1)
-        experiment.check(model="linear", sample_size=600, dim=500, sparsity_level=50, seed=294)
+        # experiment.check(model="linear", sample_size=600, dim=500, sparsity_level=50, seed=294)
         # experiment.check(model="logistic", sample_size=600, dim=500, sparsity_level=50, seed=100)
         # experiment.check(model="ising", sample_size=600, dim=190, sparsity_level=40, seed=200)
-        # experiment.check(model="trend_filter", sample_size=600, dim=600, sparsity_level=5, seed=9)
+        # experiment.check(model="trend_filter", sample_size=600, dim=600, sparsity_level=5, seed=901)
     else:
         parameters = parallel_experiment_util.para_generator(
             {
