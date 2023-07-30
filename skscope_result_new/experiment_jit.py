@@ -10,6 +10,7 @@ from skscope import (
 import time
 import numpy as np
 from skscope_experiment import model as Model
+import cvxpy as cp
 
 model_dict = {
     "linear": Model.linear,
@@ -34,30 +35,29 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
     sparsity_level = sparsity_level * n_outputs
     for method, solver in {
         "SCOPE": ScopeSolver(dim, sparsity_level, group=group),
-        #"GraSP": GraspSolver(dim, sparsity_level, group=group),
-        #"FoBa": FobaSolver(dim, sparsity_level, group=group),
-        #"OMP": OMPSolver(dim, sparsity_level, group=group),
+        "GraSP": GraspSolver(dim, sparsity_level, group=group),
+        "FoBa": FobaSolver(dim, sparsity_level, group=group),
+        "OMP": OMPSolver(dim, sparsity_level, group=group),
     }.items():
-        for is_jit in [True, False]:
+        for is_jit in [True]:#, False]:
             t1 = time.perf_counter()
-            solver.solve(loss_data, jit=True)
+            solver.solve(loss_data, jit=is_jit)
             t2 = time.perf_counter()
             results.append(
                 {
-                    "jit": is_jit,
                     "method": method,
                     "time": t2 - t1,
                     "accuracy": len(set(solver.get_support()) & true_support_set)
                     / sparsity_level,
                 }
             )
-    """
+
     # IHT, HTP
     for method, solver in {
         "IHT": IHTSolver(dim, sparsity_level, group=group),
         "HTP": HTPSolver(dim, sparsity_level, group=group),
     }.items():
-        for is_jit in [True, False]:
+        for is_jit in [True]:#, False]:
             t1 = time.perf_counter()
             best_loss = np.inf
             for step_size in [1.0, 0.1, 0.01, 0.001, 0.0001]:
@@ -70,14 +70,56 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
                 if loss < best_loss:
                     best_loss = loss
                     result = {
-                        "jit": is_jit,
                         "method": method,
                         "time": time.perf_counter() - t1,
                         "accuracy": len(set(solver.get_support()) & true_support_set)
                         / sparsity_level,
                     }
             results.append(result)
-    """
+    # CVXPY
+    if model == "multitask":
+        x = cp.Variable((int(dim / n_outputs), n_outputs))
+
+        def object_fn(x, lambd):
+            return model_dict[model].loss_cvxpy(x, data) + lambd * cp.mixed_norm(x)
+
+    else:
+        x = cp.Variable(dim)
+
+        def object_fn(x, lambd):
+            return model_dict[model].loss_cvxpy(x, data) + lambd * cp.norm1(x)
+
+    lambd = cp.Parameter(nonneg=True)
+    if model == "non_linear":
+        problem = cp.Problem(cp.Minimize(object_fn(x, lambd)), [x >= 0.0])
+    else:
+        problem = cp.Problem(cp.Minimize(object_fn(x, lambd)))
+    lambd_lowwer = 0.0
+    lambd.value = 10.0
+    start = time.perf_counter()
+    for _ in range(100):
+        try:
+            problem.solve()
+        except:
+            return results
+        params = x.value.flatten()
+        support_size_est = np.array(abs(params) > 1e-2).sum()
+
+        if support_size_est > sparsity_level:
+            lambd_lowwer = lambd.value
+            lambd.value = 2 * lambd.value
+        elif support_size_est < sparsity_level:
+            lambd.value = (lambd_lowwer + lambd.value) / 2
+        else:
+            break
+    results.append(
+        {
+            "method": "LASSO",
+            "time": time.perf_counter() - start,
+            "accuracy": len(set(np.where(abs(params) > 1e-2)[0]) & true_support_set)
+            / sparsity_level,
+        }
+    )
     return results
 
 
@@ -85,27 +127,34 @@ if __name__ == "__main__":
     experiment = parallel_experiment_util.ParallelExperiment(
         task=task,
         in_keys=["model", "sample_size", "dim", "sparsity_level", "seed"],
-        out_keys=["jit", "method", "time", "accuracy"],
+        out_keys=["method", "time", "accuracy"],
         processes=16,
-        name="skscope_experiment_jit",
+        name="skscope_experiment_trend_filter",
         memory_limit=0.9,
     )
-    import cProfile, pstats
     if True:
-        cProfile.run(
-            'experiment.check(model="trend_filter", sample_size=600, dim=600, sparsity_level=5, seed=901)',
-            "profile_data",
-        )
-        p = pstats.Stats("profile_data")
-        p.sort_stats("cumulative").print_stats(200)
         # experiment.check(model="multitask", sample_size=600, dim=500, sparsity_level=50, seed=1)
         # experiment.check(model="non_linear", sample_size=600, dim=50, sparsity_level=10, seed=1)
         # experiment.check(model="linear", sample_size=600, dim=500, sparsity_level=50, seed=294)
         # experiment.check(model="logistic", sample_size=600, dim=500, sparsity_level=50, seed=100)
         # experiment.check(model="ising", sample_size=600, dim=190, sparsity_level=40, seed=200)
-        # experiment.check(model="trend_filter", sample_size=600, dim=600, sparsity_level=5, seed=901)
+        experiment.check(model="trend_filter", sample_size=600, dim=600, sparsity_level=5, seed=901)
     else:
         parameters = parallel_experiment_util.para_generator(
+            {
+                "model": ["trend_filter"],
+                "sample_size": [600],
+                "dim": [600],
+                "sparsity_level": [5],
+            },
+            repeat=100,
+            seed=3000,
+        )
+
+        experiment.run(parameters)
+        experiment.save()
+
+"""
             {
                 "model": ["multitask"],
                 "sample_size": [600],
@@ -135,49 +184,5 @@ if __name__ == "__main__":
                 "sample_size": [600],
                 "dim": [190],
                 "sparsity_level": [40],
-            },
-            repeat=100,
-            seed=0,
-        )
-
-        experiment.run(parameters)
-        experiment.save()
-
-"""
-            {
-                "model": ["multitask"],
-                "n": [i * 100 + 100 for i in range(10)],
-                "p": [500],
-                "k": [50],
-            },
-            {
-                "model": ["additive"],
-                "n": [i * 20 + 20 for i in range(10)],
-                "p": [100],
-                "k": [4],
-            },
-            {
-                "model": ["non_additive"],
-                "n": [i * 10 + 10 for i in range(10)],
-                "p": [100],
-                "k": [3],
-            },
-            {
-                "model": ["trend_filter"],
-                "n": [100],
-                "p": [100],
-                "k": [i+1 for i in range(10)],
-            },
-            {
-                "model": ["linear", "logistic"],
-                "n": [i * 100 + 100 for i in range(10)],
-                "p": [500],
-                "k": [50],
-            },
-            {
-                "model": ["ising"],
-                "n": [i * 100 + 100 for i in range(10)],
-                "p": [190],
-                "k": [30],
             },
 """

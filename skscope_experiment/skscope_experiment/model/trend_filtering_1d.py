@@ -13,11 +13,16 @@ def data_generator(n, p, k, seed):
     y = np.cumsum(noise + true_params)
     return true_params, y
 
+
 def loss_jax(params, data):
-    return jnp.mean(jnp.square(data - jnp.cumsum(params)))
+    mat = np.zeros((params.size, params.size))
+    mat[np.tril_indices(params.size)] = 1.0
+    return jnp.mean(jnp.square(data - jnp.matmul(mat, params)))
 
 def loss_cvxpy(params, data):
-    return cp.sum_squares(data - cp.cumsum(params)) / len(data)
+    mat = np.zeros((params.size, params.size))
+    mat[np.tril_indices(params.size)] = 1.0
+    return cp.sum_squares(data - mat @ params) / len(data)
 
 def data_cpp_wrapper(data):
     return _skscope_experiment.TimeSeriesData(data)
