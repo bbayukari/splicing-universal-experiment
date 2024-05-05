@@ -19,6 +19,7 @@ model_dict = {
     "multitask": Model.multitask,
     "non_linear": Model.non_linear_non_additive_example,
     "trend_filter": Model.trend_filtering_1d,
+    "robust_ESL": Model.robust_ESL
 }
 
 
@@ -33,6 +34,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
     group = [i for i in range(dim) for _ in range(n_outputs)]
     dim = dim * n_outputs
     sparsity_level = sparsity_level * n_outputs
+    
     for method, solver in {
         "SCOPE": ScopeSolver(dim, sparsity_level, group=group),
         "GraSP": GraspSolver(dim, sparsity_level, group=group),
@@ -51,7 +53,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
                     / sparsity_level,
                 }
             )
-
+    
     # IHT, HTP
     for method, solver in {
         "IHT": IHTSolver(dim, sparsity_level, group=group),
@@ -76,6 +78,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
                         / sparsity_level,
                     }
             results.append(result)
+    
     # CVXPY
     if model == "multitask":
         x = cp.Variable((int(dim / n_outputs), n_outputs))
@@ -120,6 +123,7 @@ def task(model: str, sample_size, dim, sparsity_level, seed):
             / sparsity_level,
         }
     )
+    
     return results
 
 
@@ -128,27 +132,28 @@ if __name__ == "__main__":
         task=task,
         in_keys=["model", "sample_size", "dim", "sparsity_level", "seed"],
         out_keys=["method", "time", "accuracy"],
-        processes=16,
-        name="skscope_experiment_trend_filter",
+        processes=8,
+        name="skscope_experiment_robust_ESL",
         memory_limit=0.9,
     )
-    if True:
+    if False:
         # experiment.check(model="multitask", sample_size=600, dim=500, sparsity_level=50, seed=1)
         # experiment.check(model="non_linear", sample_size=600, dim=50, sparsity_level=10, seed=1)
         # experiment.check(model="linear", sample_size=600, dim=500, sparsity_level=50, seed=294)
         # experiment.check(model="logistic", sample_size=600, dim=500, sparsity_level=50, seed=100)
         # experiment.check(model="ising", sample_size=600, dim=190, sparsity_level=40, seed=200)
-        experiment.check(model="trend_filter", sample_size=600, dim=600, sparsity_level=5, seed=901)
+        # experiment.check(model="trend_filter", sample_size=600, dim=600, sparsity_level=50, seed=90)
+        experiment.check(model="robust_ESL", sample_size=600, dim=500, sparsity_level=50, seed=900)
     else:
         parameters = parallel_experiment_util.para_generator(
             {
-                "model": ["trend_filter"],
+                "model": ["robust_ESL"],
                 "sample_size": [600],
-                "dim": [600],
-                "sparsity_level": [5],
+                "dim": [500],
+                "sparsity_level": [50],
             },
             repeat=100,
-            seed=3000,
+            seed=0,
         )
 
         experiment.run(parameters)
@@ -156,7 +161,7 @@ if __name__ == "__main__":
 
 """
             {
-                "model": ["multitask"],
+                "model": ["robust_ESL"],
                 "sample_size": [600],
                 "dim": [500],
                 "sparsity_level": [50],
@@ -171,7 +176,7 @@ if __name__ == "__main__":
                 "model": ["trend_filter"],
                 "sample_size": [600],
                 "dim": [600],
-                "sparsity_level": [5],
+                "sparsity_level": [50],
             },
             {
                 "model": ["linear", "logistic"],

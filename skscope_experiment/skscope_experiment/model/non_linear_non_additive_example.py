@@ -4,6 +4,7 @@ import cvxpy as cp
 from sklearn.metrics.pairwise import rbf_kernel
 import _skscope_experiment
 
+
 def hsic(X, y, gamma_x=0.7, gamma_y=0.7):
     n, p = X.shape
     Gamma = np.eye(n) - np.ones((n, 1)) @ np.ones((1, n)) / n
@@ -40,9 +41,16 @@ def data_generator(n, p, sparsity_level, seed):
         true_params[true_support_set_list[i]] = i + 1.0
 
     y = (
-        np.sum(X[:, true_support_set_list[0]] * np.exp(2 * X[:, true_support_set_list[1]]), axis=1)
+        np.sum(
+            X[:, true_support_set_list[0]] * np.exp(2 * X[:, true_support_set_list[1]]),
+            axis=1,
+        )
         + np.sum(np.square(X[:, true_support_set_list[2]]), axis=1)
-        + np.sum((2 * X[:, true_support_set_list[3]] - 1) * (2 * X[:, true_support_set_list[4]] - 1), axis=1)   
+        + np.sum(
+            (2 * X[:, true_support_set_list[3]] - 1)
+            * (2 * X[:, true_support_set_list[4]] - 1),
+            axis=1,
+        )
         + noise
     )
 
@@ -56,17 +64,22 @@ def loss_jax(params, data):
 def loss_cvxpy(params, data):
     return cp.sum_squares(data[1] - data[0] @ params)
 
+
 def cvxpy_constraints(params):
     return [params >= 0.0]
+
 
 def data_cpp_wrapper(data):
     return _skscope_experiment.RegressionData(data[0], data[1])
 
+
 def loss_cpp(params, data):
     return _skscope_experiment.positive_loss(params, data)
 
+
 def grad_cpp(params, data):
     return _skscope_experiment.positive_grad(params, data)
+
 
 if __name__ == "__main__":
     true_params, data = data_generator(20, 10, 5, 0)
@@ -78,5 +91,6 @@ if __name__ == "__main__":
     print(loss_cpp(true_params, data_cpp_wrapper(data)))
 
     import jax
+
     print(jax.grad(loss_jax)(jnp.array(true_params), data))
     print(grad_cpp(true_params, data_cpp_wrapper(data)))

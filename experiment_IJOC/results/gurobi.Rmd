@@ -1,0 +1,140 @@
+---
+title: "experience"
+author: "王泽植"
+date: '2022-07-10'
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+df = read.csv('/home/wangzz/github/splicing-universal-experiment/total_experiment/results/gurobi_experiment.csv')
+df = as_tibble(df) #%>% filter(snr==1)
+```
+```{r}
+df_new = read.csv('/home/wangzz/github/splicing-universal-experiment/total_experiment/results/gurobi_experiment_new.csv')
+df_new = as_tibble(df_new) #%>% filter(snr==1)
+```
+  df %>% 
+    select(n, p, k, time = SCOPE_time, accuracy = SCOPE_accuracy) %>% 
+    mutate(method = 'SCOPE'),  
+
+```{r}
+df2 = bind_rows(
+  df %>% 
+    select(n, p, k, time = GUROBI_time, accuracy = GUROBI_accuracy) %>% 
+    mutate(method = 'GUROBI'),
+
+  df_new %>% 
+    select(n, p, k, time = time, accuracy = accuracy) %>% 
+    mutate(method = 'SCOPE'), 
+) 
+```
+
+## p=50 and n=50
+
+```{r}
+p1 = 
+df2 %>% 
+    filter(n==50,p==50) %>% 
+    ggplot(aes(as.factor(k), time, fill = method)) +
+        geom_boxplot() +
+        scale_y_log10(
+        breaks = 10^(-1:3),
+        labels = scales::trans_format(
+            "log10", 
+            scales::math_format(10^.x))) +
+        labs(y='Runtime (sec)', x= "k") +
+        theme_bw()
+p2 = 
+df2 %>% 
+    filter(n==50,p==50) %>%  
+    ggplot(aes(as.factor(k), accuracy, fill = method)) +
+        geom_boxplot() +
+        labs(y='Accuracy', x= "k") +
+        theme_bw()
+```
+
+
+## k=10 and n=100
+
+```{r}
+p3 = 
+df2 %>% filter(n==100,k==10) %>% 
+  ggplot(aes(as.factor(p), time, fill = method)) +
+      geom_boxplot() +
+      scale_y_log10(
+          breaks = 10^(-1:3),
+          labels = scales::trans_format(
+              "log10", 
+              scales::math_format(10^.x))) +
+      labs(x = 'p', y = 'Runtime (sec)') +
+        theme_bw()  
+
+p4 = 
+df2 %>% filter(n==100,k==10) %>% 
+  ggplot(aes(as.factor(p), accuracy, fill = method)) +
+      geom_boxplot() +
+      labs(x = 'p', y = 'Accuracy') +
+        theme_bw() 
+```
+
+## n changes
+
+
+```{r} 
+p5 = 
+df2 %>% filter(p==100,k==10) %>% 
+    ggplot(aes(as.factor(n), time, fill = method)) +
+        geom_boxplot() +
+        scale_y_log10(
+            breaks = 10^(-1:3),
+            labels = scales::trans_format(
+                "log10", 
+                scales::math_format(10^.x))) +
+        labs(x = 'n', y = 'Runtime (sec)') +
+        theme_bw() 
+
+p6 = 
+df2 %>% filter(p==100,k==10) %>% 
+    ggplot(aes(as.factor(n), accuracy, fill = method)) +
+        geom_boxplot() +
+        labs(x = 'n', y = 'Accuracy') +
+        theme_bw() 
+```
+
+
+```{r}
+library(ggpubr)
+page = ggarrange(p6, p5, p4, p3, p2, p1, nrow = 3, ncol = 2, legend = "bottom", common.legend = TRUE)
+
+ggexport(page, filename = 'gurobi.pdf', width = 10)
+```
+
+
+```{r}
+df %>% 
+    filter(n==100,k==10) %>% 
+    select(Dimension = p, SCOPE_accuracy, GUROBI_accuracy) %>% 
+    group_by(Dimension) %>% 
+    summarise(abess = str_c(round(mean(SCOPE_accuracy), digits = 2), '(',round(sd(SCOPE_accuracy), digits = 2), ')'),
+             gurobi = str_c(round(mean(GUROBI_accuracy), digits = 2), '(',round(sd(GUROBI_accuracy), digits = 2), ')')) 
+
+df %>% 
+    filter(n==50,p==50) %>% 
+    select(sparsity = k, SCOPE_accuracy, GUROBI_accuracy) %>% 
+    group_by(sparsity) %>% 
+    summarise(abess = str_c(round(mean(SCOPE_accuracy), digits = 2), '(',round(sd(SCOPE_accuracy), digits = 2), ')'),
+             gurobi = str_c(round(mean(GUROBI_accuracy), digits = 2), '(',round(sd(GUROBI_accuracy), digits = 2), ')')) 
+
+df %>% 
+    filter(p==100,k==10) %>% 
+    select(n, SCOPE_accuracy, GUROBI_accuracy) %>% 
+    group_by(n) %>% 
+    summarise(abess = str_c(round(mean(SCOPE_accuracy), digits = 2), '(',round(sd(SCOPE_accuracy), digits = 2), ')'),
+             gurobi = str_c(round(mean(GUROBI_accuracy), digits = 2), '(',round(sd(GUROBI_accuracy), digits = 2), ')')) 
+```
+
+
+
+
+  

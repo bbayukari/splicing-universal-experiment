@@ -7,4 +7,5 @@ from .model import (
     non_linear_additive_example,
     non_linear_non_additive_example,
     multitask,
+    robust_ESL,
 )

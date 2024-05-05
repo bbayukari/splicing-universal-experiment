@@ -83,11 +83,14 @@ def loss_jax(params, data):
         ),
     )
 
+
 def data_cpp_wrapper(data):
     return _skscope_experiment.IsingData(data.freq, data.table)
 
+
 def loss_cpp(para, data):
     return _skscope_experiment.ising_loss(para, data)
+
 
 def grad_cpp(para, data):
     return _skscope_experiment.ising_grad(para, data)
@@ -96,13 +99,11 @@ def grad_cpp(para, data):
 if __name__ == "__main__":
     true_params, data = data_generator(700, 45, 5, 708)
 
-    #print(true_params)
+    # print(true_params)
     print(np.count_nonzero(true_params))
-    #true_params = np.zeros_like(true_params)
+    # true_params = np.zeros_like(true_params)
     print(loss_jax(jnp.array(true_params), data))
 
     true_params_cvxpy = cp.Variable(len(true_params))
     true_params_cvxpy.value = true_params
     print(loss_cvxpy(true_params_cvxpy, data).value)
-
-    
