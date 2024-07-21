@@ -1,3 +1,4 @@
+import time
 from data_utils import load_mice, load_activity, load_isolet
 import jax.numpy as jnp
 import jax
@@ -8,6 +9,7 @@ from skscope import (
     GraspSolver,
     IHTSolver,
     BaseSolver,
+    FobaSolver,
 )
 import numpy as np
 import parallel_experiment_util
@@ -62,12 +64,7 @@ def load_data(rng: np.random.Generator):
 
 
 def accuaracy(params, x, y, p, m):
-    return jnp.mean(
-        jnp.argmax(jnp.dot(x, params.reshape((p, m))), axis=1) == jnp.argmax(y, axis=1)
-    ).item()
-
-
-
+    return jnp.mean(jnp.argmax(jnp.dot(x, params.reshape((p, m))), axis=1) == jnp.argmax(y, axis=1)).item()
 
 
 def run_experiment(solver_generator, num_selected_features: int, data, rng):
@@ -84,9 +81,7 @@ def run_experiment(solver_generator, num_selected_features: int, data, rng):
             raise ValueError("Unknown dataset")
 
     def multinomial_regression_loss(params):
-        return -jnp.sum(
-            jax.nn.log_softmax(jnp.dot(x_train, params.reshape((p, m)))) * y_train
-        )
+        return -jnp.sum(jax.nn.log_softmax(jnp.dot(x_train, params.reshape((p, m)))) * y_train)
 
     if solver_generator.__name__ == "BaseSolver":
         selected_features = rng.choice(p, num_selected_features, replace=False)
@@ -94,15 +89,15 @@ def run_experiment(solver_generator, num_selected_features: int, data, rng):
         x_test = x_test[:, selected_features]
         p = num_selected_features
 
-    solver = solver_generator(
-        p * m, num_selected_features, group=[i for i in range(p) for j in range(m)]
-    )
+    solver = solver_generator(p * m, num_selected_features, group=[i for i in range(p) for j in range(m)])
+    t1 = time.time()
     params = solver.solve(multinomial_regression_loss, jit=True)
     res = {
         "dataset": dataset,
         "method": solver_generator.__name__,
         "num_selected_features": num_selected_features,
         "accuracy": accuaracy(params, x_test, y_test, p, m),
+        "time": time.time() - t1,
     }
     print(res, flush=True)
     return res
@@ -113,11 +108,12 @@ def task(seed):
     rng = np.random.default_rng(seed + 321545648942)
     Data = load_data(rng)
     for solver_generator in (
-        ScopeSolver,
-        HTPSolver,
-        GraspSolver,
-        IHTSolver,
-        BaseSolver,
+        FobaSolver,
+        # ScopeSolver,
+        # HTPSolver,
+        # GraspSolver,
+        # IHTSolver,
+        # BaseSolver,
     ):
         for dataset in ["Mice", "Activity"]:  # "Isolet"
             match dataset:
@@ -148,9 +144,9 @@ if __name__ == "__main__":
     experiment = parallel_experiment_util.ParallelExperiment(
         task=task,
         in_keys=["seed"],
-        out_keys=["method", "dataset", "accuracy", "num_selected_features"],
-        processes=8,
-        name="results_2",
+        out_keys=["method", "dataset", "accuracy", "num_selected_features", "time"],
+        processes=10,
+        name="foba_t",
         memory_limit=0.9,
     )
     if False:
